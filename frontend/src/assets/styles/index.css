@@ -1,0 +1,128 @@
+:root {
+  color-scheme: light;
+}
+
+.page-shell {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8fafc 0%, rgba(239, 246, 255, 0.3) 50%, #f8fafc 100%);
+}
+
+.page-container {
+  width: min(var(--opc-page-width), calc(100vw - 64px));
+  margin: 0 auto;
+}
+
+.surface-card {
+  background: var(--opc-surface);
+  border: 1px solid var(--opc-border);
+  border-radius: var(--opc-radius-md);
+  box-shadow: var(--opc-shadow-sm);
+}
+
+.surface-card--soft {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.96));
+}
+
+.kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(217, 226, 238, 0.9);
+  color: var(--opc-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 12px 32px rgba(148, 163, 184, 0.12);
+}
+
+.section-title {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.25;
+  font-weight: 700;
+  color: var(--opc-text);
+}
+
+.section-subtitle {
+  margin: 0;
+  color: var(--opc-text-secondary);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.pill-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.pill-status--success {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.pill-status--warning {
+  color: #92400e;
+  background: #fef3c7;
+}
+
+.pill-status--info {
+  color: #1d4ed8;
+  background: #dbeafe;
+}
+
+.opc-primary-button.el-button {
+  height: 44px;
+  padding: 0 20px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.22);
+}
+
+.opc-primary-button.el-button:hover,
+.opc-primary-button.el-button:focus {
+  color: #fff;
+  background: linear-gradient(135deg, #1d4ed8, #4338ca);
+}
+
+.opc-secondary-button.el-button {
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 12px;
+  border-color: var(--opc-border-strong);
+  color: var(--opc-text);
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.opc-dialog .el-dialog {
+  border-radius: 24px;
+  padding: 10px;
+  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.22);
+}
+
+.opc-dialog .el-dialog__header {
+  padding: 18px 20px 8px;
+}
+
+.opc-dialog .el-dialog__body {
+  padding: 12px 20px 24px;
+}
+
+.opc-form .el-input__wrapper,
+.opc-form .el-textarea__inner {
+  border-radius: 14px;
+  box-shadow: 0 0 0 1px rgba(217, 226, 238, 0.9) inset;
+}
+
+.opc-form .el-input__wrapper {
+  min-height: 44px;
+}
