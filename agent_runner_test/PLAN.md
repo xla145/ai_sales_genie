@@ -1,88 +1,222 @@
-> SCOPE LOCK: 在 agent_runner_test 中按顺序落地 Alembic 初始化、MySQL CRUD、SSE 增量事件流、Hermes 调用与 patch 入库，不扩展额外能力。
+> SCOPE LOCK: 只设计 Hermes 工作空间产物保留、第二阶段完整产物保存、原型修改版本递增复制；未批准前不改实现代码。
 
 ## Research Summary
-- `agent_runner/main.py` — FastAPI 入口，仅注册 `/projects`、`/runs`、`/events` 路由和健康检查。
-- `agent_runner/api/projects.py` — 目前仅回显 payload，没有数据库写入。
-- `agent_runner/api/runs.py` — 目前仅回显 payload，没有 run 状态流转。
-- `agent_runner/api/events.py` — 仅返回空数组，尚未接入 run_events。
-- `agent_runner/db/session.py` — 已有 AsyncEngine + AsyncSessionLocal + 依赖注入函数 `get_db_session`，可直接用于 CRUD。
-- `agent_runner/db/models.py` — 已定义 `projects/project_sessions/project_runs/requirements/run_messages/run_events/tool_calls/file_changes/artifacts` 九张核心表模型，字段与 `doc/技术方案.md` 基本一致，可作为初始 migration 源。
-- `agent_runner/services/*.py` — service 层均为占位回包，需要替换成真实 DB 逻辑。
-- `agent_runner/storage/local_storage.py` — 已支持项目目录初始化，可用于 patch 文件落盘。
-- `agent_runner/services/hermes_service.py` — 当前 mock 规划返回，需要替换为 HTTP 调用 Hermes。
-- `agent_runner/worker/runner.py` — 当前仅返回 success，需要接入 Hermes + 事件 + artifact 入库流程。
-- `requirements.txt` — 已包含 `alembic/sqlalchemy/aiomysql`，不需新增迁移基础依赖。
-- Key finding: 当前代码是“骨架版”，数据库模型已就绪，最小闭环可通过“API → service → DB → 事件/SSE → runner”完成。
-- Key finding: 现有模型无 FK 约束（除了索引），CRUD 逻辑需在应用层保证 `project_id/run_id/session_id` 一致性。
+
+### 用户新要求
+- 从第二阶段开始，所有生成的文件都要在 Hermes agent 对应的工作空间保留一份。
+- Hermes 工作空间内的文件路径必须与项目空间的相对地址一致，方便后续修改对应原型设计。
+- 最终把修改后的返回文件写回时，项目空间需要保留上一份版本。
+- 每次原型修改时，再复制一份修改后的返回文件，生成递增版本：首次修改为 `v2`，下一次为 `v3`，以此类推。
+
+### 当前调用入口与阶段指令
+- `agent_runner_test/run_prototype_flow.py`
+  - `PHASES` 定义了 `phase1`、`phase2`、`phase3` 三阶段。
+  - 当前 `phase2` 指令只要求输出：
+    - `系统全局功能描述与设计.md`
+    - `系统的功能点设计.md`
+  - 当前 `phase2` 指令明确要求不要输出：
+    - `页面详细设计/`
+    - `第二阶段设计检查报告.md`
+  - 这与 orchestrator 与第二阶段 skill 的完整产物要求冲突，也无法满足后续原型生成需要页面详细设计的要求。
+  - 当前 `phase3` 指令只要求输出 `prototype/`，并明确不要输出 `generation-report`、`validation-report` 等中间产物。
+  - `--modify-prototype` 当前会创建一个 `prototype_edit` run，指令要求“修改当前原型并生成一个新的完整原型版本”，但让 Hermes “只返回需要变更的 `prototype/` 文件”。
+
+### 当前服务端 Hermes 工作空间逻辑
+- `agent_runner_test/agent_runner/worker/runner.py`
+  - `Runner.run_once()` 调用 `LocalStorage.build_project_paths(project_id)`，当前工作空间为 `paths["current"]`。
+  - 当前代码中的 `paths["current"]` 来自 `deliverables/current`。
+  - 旧测试数据里存在 `data/projects/proj_rawreq_005/current/需求结构化.md`，但当前代码已改为 `data/projects/{project_id}/deliverables/current`，导致老数据与新代码路径不一致。
+  - `_build_workspace_prompt()` 会把当前 workspace 文件内容拼入 prompt，并要求 Hermes 最终返回 JSON：
+    - `{"files":[{"path":"相对路径","content":"完整文件内容"}],"deleted_files":["相对路径"]}`
+  - 当前 prompt 明确写了：只保存最终产物：需求结构化、PRD、功能点、原型；不要返回页面详细设计、检查报告、临时分析等中间产物。
+  - 这与新要求“从第二阶段开始所有生成文件都保留一份”冲突。
+
+### 当前文件过滤与路径映射
+- `agent_runner_test/agent_runner/worker/runner.py`
+  - `FINAL_DOCUMENT_PATHS` 当前只允许/映射：
+    - `需求结构化.md` → `requirements.md`
+    - `PRD.md` / `prd.md` → `prd.md`
+    - `系统的功能点设计.md` / `feature-points.md` → `feature-points.md`
+    - `prototype/` 下文件
+  - `_is_final_document_path()` 只接受 `FINAL_DOCUMENT_PATHS` 内路径或 `prototype/` 前缀。
+  - `_materialize_response_files()` 会过滤掉不符合 `_is_final_document_path()` 的文件。
+  - 因此即使 Hermes 返回：
+    - `系统全局功能描述与设计.md`
+    - `页面详细设计/xxx.md`
+    - `第二阶段设计检查报告.md`
+    当前也可能被过滤、改名或无法完整按原相对路径保留。
+  - 当前 `系统全局功能描述与设计.md` 不在 `FINAL_DOCUMENT_PATHS` 中，存在被过滤风险。
+  - 当前 `页面详细设计/` 与 `第二阶段设计检查报告.md` 会被过滤。
+
+### 当前原型版本逻辑
+- `agent_runner_test/agent_runner/storage/local_storage.py`
+  - `create_next_prototype_version()` 使用 `deliverables/prototypes/vN` 保存原型版本。
+  - `next_number = len(versions) + 1`，首次原型 run 会得到 `v1`。
+  - 如果已有 `current_prototype_version`，会把上一版本目录复制到新版本目录，再写入本次变更。
+  - `finalize_prototype_version()` 成功后把 `current_prototype_version` 更新为当前版本。
+- `agent_runner_test/agent_runner/worker/runner.py`
+  - `is_prototype_run = "prototype" in run_id or "原型" in prompt or "prototype" in prompt.lower()`。
+  - 只要判断为原型 run，就会创建下一版 prototype 目录。
+  - `_target_for_output_path()` 会把返回的 `prototype/...` 映射到当前版本目录 `deliverables/prototypes/vN/...`。
+  - 这已经具备“基于上一版本复制再写变更”的基础能力。
+  - 但当前 `--modify-prototype` 指令只返回变更文件，返回结果本身不会自动包含完整版本文件列表；完整版本存在于 `deliverables/prototypes/vN` 中。
+
+### 当前 artifact 与返回下载逻辑
+- `agent_runner_test/agent_runner/worker/runner.py`
+  - 每次 run 会在 `data/projects/{project_id}/runs/{run_id}/` 保存：
+    - `hermes_output.md`
+    - `patch.diff`
+    - `manifest.json`
+  - artifacts 表只登记这三个 run 级 artifact。
+  - `generated_files` 返回 `_materialize_response_files()` 实际写入的文件列表。
+- `agent_runner_test/agent_runner/api/runs.py`
+  - `/runs/{run_id}/artifacts` 返回 run 级 artifact 下载地址。
+  - `/runs/{run_id}/artifacts/{artifact_id}` 只能下载已入库的 artifact 文件。
+  - 当前没有把每个 materialized 文件逐个作为 artifact 入库，因此前端/调用方如果只依赖 artifact 下载接口，拿不到每个产物文件的下载项。
+
+### 当前 project-relative 与 Hermes workspace-relative 的问题
+- 当前 materialize 后的 `storage_path` 是绝对路径，但 `path` 是映射后的相对路径。
+- 当前会把中文产物名映射为英文名，例如 `系统的功能点设计.md` → `feature-points.md`。
+- 用户新要求是“跟项目的相对地址一致”，因此从第二阶段开始不应再把这些产物改名为英文路径；应保留 Hermes 返回路径与项目空间路径一致。
+- 第一阶段是否继续映射 `需求结构化.md` → `requirements.md` 需要确认；本次用户明确说“从第二阶段开始”，因此计划只调整第二阶段及之后，尽量不破坏第一阶段既有行为。
+
+### 关键冲突
+1. 第二阶段 orchestrator/skill 要求四类产物，但 `run_prototype_flow.py` 当前只要求两个文件，并禁止页面详细设计和检查报告。
+2. Runner prompt 当前要求不要返回页面详细设计、检查报告，与新要求冲突。
+3. Runner 文件过滤当前不允许第二阶段完整产物落盘。
+4. 当前原型版本从首次原型生成开始为 `v1`，修改后为 `v2` 的目标基本可满足；但需要明确只在 `prototype_edit`/原型阶段创建新版本，避免第二阶段误触发版本。
+5. 当前旧测试数据使用 `data/projects/{project_id}/current`，当前代码使用 `data/projects/{project_id}/deliverables/current`，需要统一，避免阶段二找不到阶段一产物。
 
 ---
 
 ## Implementation Plan
 
 ### Overview
-先建立 Alembic 基线，保证模型可迁移；再将项目/run/event 路由接入 MySQL；随后增加基于 `run_events.id` 的 SSE 增量流；最后在 runner 中调用 Hermes 并把 patch 写入本地存储与 artifacts 表，形成最小可追溯闭环。
+调整 runner 的阶段感知、文件保留策略和原型版本策略：第二阶段开始允许并要求完整产物按原相对路径写入 `deliverables/current`；原型文件继续进入 `deliverables/prototypes/vN`，每次原型修改先复制上一版本再应用返回文件，保持 `v1 → v2 → v3` 递增；run manifest 记录 project workspace 与 prototype version 的完整映射。
 
 ### Constraints (DO NOT VIOLATE)
-- `agent_runner/db/models.py` — 作为当前数据契约，不做破坏性字段删除或改名，避免迁移与业务逻辑错位。
-- `/projects`、`/runs`、`/events` 路径 — 保持现有 API 前缀不变，避免调用方断裂。
-- 仅实现最小闭环 — 不引入队列系统、鉴权、复杂任务编排。
+- 不再丢弃第二阶段产物：`系统全局功能描述与设计.md`、`系统的功能点设计.md`、`页面详细设计/`、`第二阶段设计检查报告.md` 必须允许落盘。
+- 第二阶段及之后保留项目相对路径，不把中文文件名强制改为英文别名。
+- 原型修改必须保留上一版本目录，不覆盖旧版本。
+- 每次原型修改都基于当前版本复制新版本，再写入 Hermes 返回的变更文件。
+- 未批准前不改实现代码。
 
-### Steps
+### Step 1: 调整阶段二/阶段三指令
+- **File**: `agent_runner_test/run_prototype_flow.py`
+- **Change**:
+  - `phase2` instruction 改为要求完整输出四类第二阶段产物：
+    - `系统全局功能描述与设计.md`
+    - `系统的功能点设计.md`
+    - `页面详细设计/页面名称.md`
+    - `第二阶段设计检查报告.md`
+  - 删除“不要输出页面详细设计、第二阶段设计检查报告”的限制。
+  - `phase3` instruction 改为基于完整第二阶段产物生成完整 `prototype/`，并可按需要输出 `generation-report.md`、`validation-report.md`。
+- **Sketch**:
+  - phase2 prompt 明确：最终 JSON 的 files[].path 必须使用上述项目相对路径。
+- [ ] pending
 
-#### Step 1: 初始化 Alembic 与首个迁移
-- **File**: `agent_runner_test/alembic.ini`, `agent_runner_test/alembic/env.py`, `agent_runner_test/alembic/versions/*.py`
-- **Change**: 新增 Alembic 配置，接入 `agent_runner.db.base.Base.metadata`，创建初始建表迁移。
-- **Sketch**: `target_metadata = Base.metadata`
-- [x] done
+### Step 2: 让 runner prompt 支持第二阶段完整产物
+- **File**: `agent_runner_test/agent_runner/worker/runner.py`
+- **Change**:
+  - `_build_workspace_prompt()` 增加 run context 或 phase/run_type 信息，避免所有阶段共用“只保存最终产物”的限制。
+  - 从第二阶段开始删除“不要返回页面详细设计、检查报告”的限制。
+  - 明确要求：从第二阶段开始，所有生成文件必须返回完整 JSON 文件内容，并按项目相对路径保存。
+  - 对 prototype edit 保持“可只返回变更文件”，runner 负责复制上一版本形成完整 vN。
+- **Sketch**:
+  - `artifact_policy = self._build_artifact_policy(run_type, prompt)`
+  - phase2 policy: allow all design outputs.
+  - prototype policy: return prototype paths only; runner versions them.
+- [ ] pending
 
-#### Step 2: 落地 MySQL CRUD（projects/runs/events）
-- **File**: `agent_runner/services/project_service.py`, `agent_runner/services/run_service.py`, `agent_runner/services/event_service.py`, `agent_runner/api/projects.py`, `agent_runner/api/runs.py`, `agent_runner/api/events.py`
-- **Change**: 用 AsyncSession 实现创建项目、创建 run、写入/查询 run_events；API 注入 DB session 并调用 service。
-- **Sketch**: `await session.execute(select(...).where(...))`
-- [x] done
+### Step 3: 调整文件允许规则，保留第二阶段路径
+- **File**: `agent_runner_test/agent_runner/worker/runner.py`
+- **Change**:
+  - 替换或扩展 `FINAL_DOCUMENT_PATHS`，使第二阶段及之后允许：
+    - `系统全局功能描述与设计.md`
+    - `系统的功能点设计.md`
+    - `页面详细设计/...`
+    - `第二阶段设计检查报告.md`
+    - `generation-report.md`
+    - `validation-report.md`
+    - `prototype/...`
+  - 第二阶段及之后不再把 `系统的功能点设计.md` 映射为 `feature-points.md`。
+  - 保留第一阶段 `需求结构化.md` 的兼容策略，或者增加同时兼容中文原名和旧英文名。
+- **Sketch**:
+  - `ALLOWED_WORKSPACE_PREFIXES = ("页面详细设计/",)`
+  - `ALLOWED_WORKSPACE_FILES = {...}`
+  - `_target_for_output_path()` 默认使用原始 relative path，仅对 prototype 做版本目录映射。
+- [ ] pending
 
-#### Step 3: 增加 SSE 增量事件流
-- **File**: `agent_runner/api/events.py`, `agent_runner/services/event_service.py`
-- **Change**: 新增 SSE endpoint，按 `after_id` 增量拉取 `run_events`，输出 `text/event-stream`。
-- **Sketch**: `StreamingResponse(event_generator(), media_type="text/event-stream")`
-- [x] done
+### Step 4: 统一项目工作空间 current 路径兼容
+- **File**: `agent_runner_test/agent_runner/storage/local_storage.py`, `agent_runner_test/agent_runner/worker/runner.py`
+- **Change**:
+  - 继续以 `deliverables/current` 作为新标准项目空间。
+  - 在必要时为旧路径 `data/projects/{project_id}/current` 做一次性兼容迁移/读取：如果 `deliverables/current` 为空且旧 `current` 存在，则复制旧 `current` 到 `deliverables/current`。
+  - 避免阶段二因第一阶段旧产物在旧目录而失败。
+- **Sketch**:
+  - `ensure_current_workspace(project_id)` copies legacy files only when new workspace has no files.
+- [ ] pending
 
-#### Step 4: Hermes 调用与 patch 入库
-- **File**: `agent_runner/services/hermes_service.py`, `agent_runner/worker/runner.py`, `agent_runner/services/artifact_service.py`, `agent_runner/storage/local_storage.py`（如需小幅补充）
-- **Change**: Hermes HTTP 调用（超时/异常映射最小处理）、patch 落盘、artifacts 入库、run_events/tool_calls 记录、run 状态收敛。
-- **Sketch**: `patch_text = await hermes.generate_patch(...)`
-- [x] done
+### Step 5: 收紧原型版本触发规则
+- **File**: `agent_runner_test/agent_runner/worker/runner.py`, possibly `agent_runner_test/agent_runner/api/runs.py`
+- **Change**:
+  - 优先根据 `run_type` 判断是否为原型生成/修改，而不是只靠 run_id/prompt 字符串。
+  - `phase3_prototype` 生成 `v1`。
+  - `prototype_edit` 基于当前版本复制生成 `v2`、`v3` 等。
+  - 第二阶段 run 不创建 prototype 版本。
+- **Sketch**:
+  - pass `run_type` into `runner.run_once(...)` from `execute_run()`.
+  - `is_prototype_run = run_type in {"phase3_prototype", "prototype_edit"}`.
+- [ ] pending
 
-### Files to modify / create
+### Step 6: manifest 记录完整映射与版本信息
+- **File**: `agent_runner_test/agent_runner/worker/runner.py`
+- **Change**:
+  - `manifest.json` 增加：
+    - `workspace_path`
+    - `project_relative_files`
+    - `prototype_version`
+    - `base_version`
+    - `version_storage_path`
+    - `copied_from_previous_version`
+  - 用于后续定位“项目空间保留哪一份，v2/v3 修改结果在哪里”。
+- **Sketch**:
+  - `manifest["written_files"]` 继续保留 `path` 与 `storage_path`。
+- [ ] pending
+
+### Step 7: 可选地把 materialized 文件登记为 artifacts
+- **File**: `agent_runner_test/agent_runner/worker/runner.py`, `agent_runner_test/agent_runner/services/artifact_service.py`
+- **Change**:
+  - 除 `hermes_output.md`、`patch.diff`、`manifest.json` 外，把每个写入的产物文件也保存 artifact 记录。
+  - artifact metadata 记录 `project_relative_path`、`prototype_version`。
+  - 这样后续页面可以直接通过 artifacts 列表展示 PRD、功能点列表、页面设计文件、原型文件。
+- **Trade-off**:
+  - artifact 数量会变多，但更利于前端展示和调试。
+- [ ] pending
+
+### Step 8: 验证场景
+- **Commands**:
+  - 运行阶段二：确认 `deliverables/current/系统全局功能描述与设计.md`、`deliverables/current/系统的功能点设计.md`、`deliverables/current/页面详细设计/*.md`、`deliverables/current/第二阶段设计检查报告.md` 存在。
+  - 运行阶段三：确认 `deliverables/prototypes/v1/prototype/...` 或版本目录中的原型文件存在，且 `current_version.json` 指向 `v1`。
+  - 运行一次 `--modify-prototype`：确认 `v2` 从 `v1` 复制而来，变更文件写入 `v2`，`v1` 保留。
+  - 再运行一次 `--modify-prototype`：确认生成 `v3`，`v2` 保留。
+- [ ] pending
+
+### Files to modify
 | File | Change | Why |
 |------|--------|-----|
-| `agent_runner_test/PLAN.md` | create | 固化研究和执行范围 |
-| `agent_runner_test/alembic.ini` | create | Alembic 主配置 |
-| `agent_runner_test/alembic/env.py` | create | 连接模型 metadata |
-| `agent_runner_test/alembic/script.py.mako` | create | Alembic 模板 |
-| `agent_runner_test/alembic/versions/*.py` | create | 初始建表迁移 |
-| `agent_runner/services/project_service.py` | modify | 项目 CRUD |
-| `agent_runner/services/run_service.py` | modify | run CRUD 与状态更新 |
-| `agent_runner/services/event_service.py` | modify | 事件写入/增量读取 |
-| `agent_runner/services/artifact_service.py` | modify | artifact 入库 |
-| `agent_runner/services/hermes_service.py` | modify | 调用 Hermes API |
-| `agent_runner/api/projects.py` | modify | 路由接入 service+DB |
-| `agent_runner/api/runs.py` | modify | 路由接入 service+DB |
-| `agent_runner/api/events.py` | modify | 列表与 SSE |
-| `agent_runner/worker/runner.py` | modify | Hermes + patch + 入库流程 |
+| `agent_runner_test/run_prototype_flow.py` | 调整阶段二/三与原型修改指令 | 让 Hermes 返回完整阶段产物 |
+| `agent_runner_test/agent_runner/worker/runner.py` | 阶段感知 prompt、允许路径、版本触发、manifest | 实现产物保留与版本化核心逻辑 |
+| `agent_runner_test/agent_runner/storage/local_storage.py` | current 路径兼容、版本复制元数据 | 避免旧 workspace 断裂，增强版本记录 |
+| `agent_runner_test/agent_runner/api/runs.py` | 将 run_type 传给 runner | 避免靠 prompt/run_id 猜测阶段 |
+| `agent_runner_test/agent_runner/services/artifact_service.py` | 如需批量登记产物 artifact | 支撑后续页面展示产物列表 |
 
 ### What will NOT change
-- 不改动前端与主工程 `app/` 下代码。
-- 不实现生产级任务队列、重试编排和权限体系。
+- 不改数据库 schema，除非实现时发现 artifact metadata 无法满足需求。
+- 不引入新的队列、鉴权或外部存储。
+- 不把旧版本原型覆盖为最新版本。
 
-### Risks / trade-offs
-- 当前 `run_id/project_id` 由调用方传入，若重复会触发唯一键冲突；先保持简单失败返回。
-- SSE 采用轮询读库实现，吞吐较低但足够支持最小测试闭环。
-- Hermes 响应结构可能不稳定，先兼容常见 `patch`/`content` 字段。
-
----
-
-## Deferred
-- requirement 深度拆解写入（requirements 全链路）
-- tool_calls 全量细粒度埋点
-- 对象存储 S3 真正实现
+### Open Questions
+1. “PRD”页面展示的数据源是否要使用 `系统全局功能描述与设计.md`，还是需要 Hermes 在第二阶段额外生成标准 `PRD.md`？
+2. 后续页面展示“功能点列表”时，是否直接读取 `系统的功能点设计.md`，还是需要 runner 额外解析为结构化 JSON？
+3. 原型版本目录期望是 `deliverables/prototypes/v2/prototype/...`，还是 `deliverables/prototypes/v2/...` 直接放 HTML/CSS？当前实现是后者，因为 `prototype/` 前缀会映射到版本目录根。建议保持当前实现，返回路径仍显示为 `prototype/...`。

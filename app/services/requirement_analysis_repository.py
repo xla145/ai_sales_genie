@@ -103,8 +103,10 @@ class RequirementAnalysisRepository:
                 },
                 "attachments": [
                     {
+                        "id": str(row.id),
                         "name": row.name,
                         "meta": row.meta,
+                        "storage_path": row.storage_path,
                     }
                     for row in attachments
                 ],
@@ -227,7 +229,7 @@ class RequirementAnalysisRepository:
                         update_id=user_id,
                         name=str(item.get("name") or ""),
                         meta=str(item.get("meta") or ""),
-                        storage_path=None,
+                        storage_path=str(item.get("storage_path") or "") or None,
                     )
                 )
 

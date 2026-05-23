@@ -3,6 +3,7 @@ from __future__ import annotations
 from functools import lru_cache
 from datetime import datetime
 from pathlib import Path
+from typing import BinaryIO
 import re
 import shutil
 from uuid import uuid4
@@ -22,6 +23,9 @@ from app.storage.header_store import HeaderStore
 
 
 class ProjectService:
+    MAX_REQUIREMENT_UPLOAD_BYTES = 20 * 1024 * 1024
+    REQUIREMENT_UPLOAD_EXTENSIONS = {".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".txt", ".md", ".png", ".jpg", ".jpeg"}
+
     def __init__(self, base_dir: Path, header_store: HeaderStore | None = None) -> None:
         self.base_dir = base_dir
         self.projects_dir = self.base_dir / "data" / "projects"
@@ -155,6 +159,65 @@ class ProjectService:
         project.config = config
         self.save_project(project, user_id=user_id)
         return project
+
+    def list_requirement_uploads(self, project_id: str, user_id: str) -> list[dict]:
+        project = self.get_project_for_user(project_id, user_id)
+        analysis = self._normalize_config(dict(project.config or {}))["requirementAnalysis"]
+        return list(analysis.get("attachments") or [])
+
+    def upload_requirement_file(self, project_id: str, user_id: str, *, filename: str, content_type: str | None, file_obj: BinaryIO) -> dict:
+        project = self.get_project_for_user(project_id, user_id)
+        original_name = Path(filename or "upload").name
+        extension = Path(original_name).suffix.lower()
+        if extension not in self.REQUIREMENT_UPLOAD_EXTENSIONS:
+            raise ValueError("Unsupported requirement file type")
+
+        upload_dir = self._requirement_upload_dir(project)
+        upload_dir.mkdir(parents=True, exist_ok=True)
+        upload_id = f"upload_{uuid4().hex[:12]}"
+        stored_name = f"{upload_id}{extension}"
+        storage_path = upload_dir / stored_name
+        size = self._write_limited_upload(file_obj, storage_path)
+        uploaded_at = datetime.now()
+        attachment = {
+            "id": upload_id,
+            "name": original_name,
+            "meta": self._format_upload_meta(size, uploaded_at),
+            "size": size,
+            "content_type": content_type,
+            "storage_path": str(storage_path.relative_to(Path(project.workspace_path))),
+            "uploaded_at": uploaded_at.isoformat(),
+        }
+
+        config = self._normalize_config(dict(project.config or {}))
+        analysis = dict(config["requirementAnalysis"])
+        attachments = [attachment, *list(analysis.get("attachments") or [])]
+        analysis["attachments"] = attachments
+        config["requirementAnalysis"] = analysis
+        project.config = config
+        self.save_project(project, user_id=user_id)
+        return attachment
+
+    def delete_requirement_upload(self, project_id: str, user_id: str, upload_id: str) -> None:
+        project = self.get_project_for_user(project_id, user_id)
+        config = self._normalize_config(dict(project.config or {}))
+        analysis = dict(config["requirementAnalysis"])
+        attachments = list(analysis.get("attachments") or [])
+        target = next((item for item in attachments if str(item.get("id") or "") == upload_id), None)
+        if target is None:
+            raise FileNotFoundError(upload_id)
+
+        storage_path = str(target.get("storage_path") or "")
+        if storage_path:
+            candidate = (Path(project.workspace_path) / storage_path).resolve()
+            upload_root = self._requirement_upload_dir(project).resolve()
+            if candidate == upload_root or upload_root in candidate.parents:
+                candidate.unlink(missing_ok=True)
+
+        analysis["attachments"] = [item for item in attachments if str(item.get("id") or "") != upload_id]
+        config["requirementAnalysis"] = analysis
+        project.config = config
+        self.save_project(project, user_id=user_id)
 
     def read_phase1_requirement_doc(self, project_id: str, user_id: str) -> str:
         project = self.get_project_for_user(project_id, user_id)
@@ -330,6 +393,30 @@ class ProjectService:
                 "notes": "",
             },
         }
+
+    def _write_limited_upload(self, file_obj: BinaryIO, storage_path: Path) -> int:
+        size = 0
+        with storage_path.open("wb") as target:
+            while chunk := file_obj.read(1024 * 1024):
+                size += len(chunk)
+                if size > self.MAX_REQUIREMENT_UPLOAD_BYTES:
+                    target.close()
+                    storage_path.unlink(missing_ok=True)
+                    raise ValueError("Requirement file is too large")
+                target.write(chunk)
+        return size
+
+    def _requirement_upload_dir(self, project: Project) -> Path:
+        return Path(project.workspace_path) / "requirements" / "uploads"
+
+    def _format_upload_meta(self, size: int, uploaded_at: datetime) -> str:
+        if size >= 1024 * 1024:
+            display_size = f"{size / 1024 / 1024:.1f} MB"
+        elif size >= 1024:
+            display_size = f"{size / 1024:.1f} KB"
+        else:
+            display_size = f"{size} B"
+        return f"{display_size} · {uploaded_at.strftime('%Y-%m-%d %H:%M')}"
 
     def _normalize_config(self, config: dict) -> dict:
         result = dict(config)

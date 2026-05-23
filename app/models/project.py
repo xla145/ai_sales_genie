@@ -57,8 +57,13 @@ class RequirementPending(BaseModel):
 
 
 class RequirementAttachmentItem(BaseModel):
+    id: str | None = None
     name: str = ""
     meta: str = ""
+    size: int | None = None
+    content_type: str | None = None
+    storage_path: str | None = None
+    uploaded_at: datetime | None = None
 
 
 class RequirementSupplement(BaseModel):

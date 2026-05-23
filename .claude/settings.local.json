@@ -88,7 +88,8 @@
       "Bash(docker exec ai_quote_mysql *)",
       "Bash(pytest *)",
       "Bash(python3.11 --version)",
-      "Bash(python3.12 --version)"
+      "Bash(python3.12 --version)",
+      "Bash(需求结构化.md)"
     ]
   }
 }

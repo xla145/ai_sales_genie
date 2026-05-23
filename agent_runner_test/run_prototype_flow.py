@@ -20,13 +20,13 @@ PHASES = [
     },
     {
         "key": "phase2",
-        "title": "阶段二：功能与页面设计",
+        "title": "阶段二：系统全局功能描述与设计与功能点设计",
         "run_type": "phase2_design",
         "user_message": "进入阶段二：功能与页面设计",
         "instruction": (
-            "进入阶段二：PRD 与功能点设计。基于当前 workspace 中的需求结构化产物，"
-            "只输出最终产物 `PRD.md` 和 `系统的功能点设计.md`；"
-            "不要输出页面详细设计、检查报告或其他中间产物。"
+            "进入阶段二：系统全局功能描述与设计与功能点设计。基于当前 workspace 中的需求结构化产物，"
+            "只输出最终产物 `系统全局功能描述与设计.md` 和 `系统的功能点设计.md`；"
+            "不要输出页面详细设计、第二阶段设计检查报告或其他中间产物。"
         ),
     },
     {
@@ -35,7 +35,7 @@ PHASES = [
         "run_type": "phase3_prototype",
         "user_message": "进入阶段三：原型生成",
         "instruction": (
-            "进入阶段三：原型生成。基于当前 workspace 中的 PRD 和功能点最终产物，"
+            "进入阶段三：原型生成。基于当前 workspace 中的系统全局功能描述与设计与功能点设计最终产物，"
             "只输出 `prototype/` 多页面静态原型文件；不要输出 generation-report、validation-report 或其他中间产物。"
         ),
     },
@@ -289,3 +289,12 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+"""
+uv run python run_prototype_flow.py \
+    --project-id proj_rawreq_005 \
+    --session-id proj_rawreq_005 \
+    --requirement /Users/mac/xula/ai_sales_genie/agent_runner_test/data/projects/proj_rawreq_005/current/需求结构化.md \
+    --phase phase2 
+"""
