@@ -1,24 +1,12 @@
 <template>
   <ProjectLayout>
     <div class="intelligence-page">
-      <aside class="intelligence-page__sidebar">
-        <div class="intelligence-page__sidebar-head">
-          <h3 class="intelligence-page__sidebar-title">情报分析</h3>
-        </div>
-
-        <div class="intelligence-page__nav">
-          <button
-            v-for="section in sections"
-            :key="section.id"
-            type="button"
-            class="intelligence-page__nav-item"
-            :class="{ 'intelligence-page__nav-item--active': selectedSection === section.id }"
-            @click="selectedSection = section.id"
-          >
-            <span>{{ section.title }}</span>
-          </button>
-        </div>
-      </aside>
+      <RequirementSectionNav
+        :nav-title="'情报分析与支撑'"
+        :active-key="selectedSection"
+        :items="navItems"
+        @select="handleSectionSelect"
+      />
 
       <main class="intelligence-page__main">
         <div class="intelligence-page__container">
@@ -156,10 +144,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { useIntelligenceAnalysis } from '@/composables/useIntelligenceAnalysis'
+import { useIntelligenceAnalysis, type IntelligenceSectionType } from '@/composables/useIntelligenceAnalysis'
+import RequirementSectionNav from '@/components/requirement/RequirementSectionNav.vue'
 import { useAgentRuns } from '@/composables/useAgentRuns'
 import { useProjectStore } from '@/stores/project'
 import { normalizeRequirementAnalysis } from '@/utils/requirement'
@@ -180,12 +169,32 @@ const {
   detailMode,
   filteredProjects,
   searchKeyword,
-  sections,
   selectedSection,
   applySearch,
   openDetail,
   startAnalysis,
 } = useIntelligenceAnalysis()
+
+const navItems = computed(() => [
+  {
+    key: 'overview',
+    title: '情报概览',
+    iconName: 'eye',
+    badge: analysisStarted.value
+      ? { text: '4类情报已生成', type: 'info' as const }
+      : { text: '待分析', type: 'warning' as const },
+  },
+  {
+    key: 'history',
+    title: '历史参考案例',
+    iconName: 'file-text',
+    badge: { text: `${filteredProjects.value.length}个案例`, type: 'info' as const },
+  },
+])
+
+const handleSectionSelect = (key: string) => {
+  selectedSection.value = key as IntelligenceSectionType
+}
 
 const handleStartAnalysis = async () => {
   analyzing.value = true
@@ -208,63 +217,22 @@ const handleStartAnalysis = async () => {
 <style scoped>
 .intelligence-page {
   display: flex;
-  min-height: 100%;
+  flex: 1;
+  min-height: 0;
   background: #f8fafc;
-}
-
-.intelligence-page__sidebar {
-  width: 272px;
-  flex: none;
-  border-right: 1px solid #e2e8f0;
-  background: #fff;
-}
-
-.intelligence-page__sidebar-head {
-  padding: 16px;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.intelligence-page__sidebar-title {
-  margin: 0;
-  color: #0f172a;
-  font-size: 18px;
-  line-height: 1.5;
-  font-weight: 500;
-}
-
-.intelligence-page__nav {
-  padding: 16px;
-  display: grid;
-  gap: 8px;
-}
-
-.intelligence-page__nav-item {
-  min-height: 48px;
-  padding: 0 16px;
-  border: 1px solid transparent;
-  border-radius: 10px;
-  background: transparent;
-  color: #334155;
-  text-align: left;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.intelligence-page__nav-item--active {
-  border-color: #bfdbfe;
-  background: #eff6ff;
-  color: #1d4ed8;
+  overflow: hidden;
 }
 
 .intelligence-page__main {
   flex: 1;
-  overflow: auto;
+  min-width: 0;
+  overflow-y: auto;
 }
 
 .intelligence-page__container {
-  max-width: 1120px;
-  padding: 32px;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 16px;
 }
 
 .panel-card {
@@ -635,15 +603,10 @@ const handleStartAnalysis = async () => {
   line-height: 1.8;
 }
 
-@media (max-width: 960px) {
+@media (max-width: 1200px) {
   .intelligence-page {
     flex-direction: column;
-  }
-
-  .intelligence-page__sidebar {
-    width: 100%;
-    border-right: none;
-    border-bottom: 1px solid #e2e8f0;
+    overflow: auto;
   }
 
   .analysis-result__grid,

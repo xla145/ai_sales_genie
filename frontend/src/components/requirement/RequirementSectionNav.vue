@@ -3,7 +3,7 @@
     <div class="section-nav__head">
       <h3 class="section-nav__title">
         <span class="section-nav__title-bar"></span>
-        需求分析与评估
+        {{ displayTitle }}
       </h3>
     </div>
     <div class="section-nav__list">
@@ -35,9 +35,11 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import SectionIcon from '@/components/icons/SectionIcon.vue'
 
-defineProps<{
+const props = withDefaults(defineProps<{
+  navTitle?: string
   activeKey: string
   items: Array<{
     key: string
@@ -45,7 +47,11 @@ defineProps<{
     iconName: string
     badge?: { text: string; type: 'warning' | 'error' | 'info' }
   }>
-}>()
+}>(), {
+  navTitle: '需求分析与评估',
+})
+
+const displayTitle = computed(() => props.navTitle || '需求分析与评估')
 
 defineEmits<{ select: [string] }>()
 </script>
@@ -54,13 +60,16 @@ defineEmits<{ select: [string] }>()
 .section-nav {
   display: flex;
   width: 288px;
+  height: 100%;
   flex-shrink: 0;
   flex-direction: column;
+  align-self: stretch;
   border-right: 1px solid #e2e8f0;
   background: #fff;
 }
 
 .section-nav__head {
+  flex-shrink: 0;
   padding: 16px;
   border-bottom: 1px solid #e2e8f0;
 }

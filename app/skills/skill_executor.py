@@ -13,10 +13,12 @@ from app.storage.logger import ProjectLogger
 
 def _build_business_constraints(skill: WorkflowSkillDefinition, expected_outputs: list[str]) -> list[str]:
     constraints = [
-        "最终必须产出预期文件。",
+        "最终必须产出预期文件，且预期文件必须写入当前项目 workspace 内。",
+        "所有产物路径、工具 path、最终回复里的文件路径都必须是相对当前 workspace 的相对路径，禁止使用 /opt/data、/opt/hermes、/tmp、/workspace 或其他绝对路径。",
+        "不得读取、复用、覆盖或删除其他项目、其他 session 的文件；如输入材料包含绝对路径，只能作为历史描述，不得作为真实读写路径。",
         "如果 Skill 文档定义了标准交付物结构、章节、表格字段或编号，必须严格遵守，不得自行改写标题体系、章节顺序或字段名称。",
         "信息不足时可以补充内容，但不得删除 Skill 要求的固定章节，也不得改用自由格式替代模板格式。",
-        "完成写文件后，最终回复只需简洁说明已写入哪些文件，不要输出新的概览版、改写版或另一套自由格式正文。",
+        "完成写文件后，最终回复只需简洁说明已写入哪些相对路径文件，不要输出新的概览版、改写版或另一套自由格式正文。",
     ]
     if skill.phase_id == PhaseId.PHASE1 and "需求结构化.md" in expected_outputs:
         constraints.append(
@@ -43,7 +45,8 @@ def _build_business_context(
     return [
         f"当前阶段: {skill.phase_id.value} / {skill.phase_name}",
         f"预期产物: {', '.join(expected_outputs) if expected_outputs else '无'}",
-        f"工作目录确认: {workspace_dir}",
+        f"当前项目 workspace: {workspace_dir}",
+        "workspace 仅用于隔离确认；写文件和汇报产物时只能使用相对路径。",
     ]
 
 

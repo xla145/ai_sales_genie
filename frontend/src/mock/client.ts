@@ -68,6 +68,8 @@ export const mockApi = {
   async createProject(payload: CreateProjectRequest) {
     const project: Project = {
       project_id: nextId('proj'),
+      created_id: 'mock-user',
+      update_id: 'mock-user',
       name: payload.name,
       description: payload.description ?? null,
       status: 'created',

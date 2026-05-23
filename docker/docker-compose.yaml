@@ -68,4 +68,4 @@ services:
       resources:
         limits:
           memory: 4G
-          cpus: "2.0"
+          cpus: "2.0" 

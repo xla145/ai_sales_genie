@@ -4,6 +4,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 
+from app.api.auth import CurrentUserDep
 from app.api.deps import get_workflow_service
 from app.models.run import CreateWorkflowRequest, SubtaskRun, WorkflowRun
 from app.services.orchestrator_service import MissingWorkflowInputError, WorkflowService
@@ -19,9 +20,10 @@ async def create_workflow(
     project_id: str,
     payload: CreateWorkflowRequest,
     workflow_service: WorkflowServiceDep,
+    _current_user: CurrentUserDep,
 ) -> WorkflowRun:
     try:
-        return await workflow_service.create_workflow(project_id, payload)
+        return await workflow_service.create_workflow(project_id, _current_user.user_id, payload)
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Project or session not found") from None
     except MissingWorkflowInputError as exc:
@@ -32,11 +34,12 @@ async def create_workflow(
 def get_workflow(
     project_id: str,
     workflow_id: str,
+    workflow_service: WorkflowServiceDep,
+    _current_user: CurrentUserDep,
     session_id: str | None = None,
-    workflow_service: WorkflowServiceDep = Depends(get_workflow_service),
 ) -> WorkflowRun:
     try:
-        return workflow_service.get_workflow(project_id, workflow_id, session_id=session_id)
+        return workflow_service.get_workflow(project_id, _current_user.user_id, workflow_id, session_id=session_id)
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Workflow not found") from None
 
@@ -45,10 +48,11 @@ def get_workflow(
 def list_workflow_subtasks(
     project_id: str,
     workflow_id: str,
+    workflow_service: WorkflowServiceDep,
+    _current_user: CurrentUserDep,
     session_id: str | None = None,
-    workflow_service: WorkflowServiceDep = Depends(get_workflow_service),
 ) -> list[SubtaskRun]:
     try:
-        return workflow_service.list_subtasks(project_id, workflow_id, session_id=session_id)
+        return workflow_service.list_subtasks(project_id, _current_user.user_id, workflow_id, session_id=session_id)
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Workflow not found") from None

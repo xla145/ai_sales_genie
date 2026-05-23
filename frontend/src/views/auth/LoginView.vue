@@ -47,8 +47,8 @@
           </div>
 
           <div class="login-page__card-head">
-            <h2>欢迎回来</h2>
-            <p>登录您的账户以继续</p>
+            <h2>{{ isRegisterMode ? '创建账户' : '欢迎回来' }}</h2>
+            <p>{{ isRegisterMode ? '注册后自动登录' : '登录您的账户以继续' }}</p>
           </div>
 
           <form class="login-page__form" @submit.prevent="handleSubmit">
@@ -65,24 +65,32 @@
               <input v-model="password" :type="showPassword ? 'text' : 'password'" placeholder="••••••••" required />
             </label>
 
+            <label v-if="isRegisterMode" class="login-page__field">
+              <span>显示名称</span>
+              <input v-model="displayName" type="text" placeholder="请输入显示名称（可选）" />
+            </label>
+
             <label class="login-page__remember">
               <input v-model="remember" type="checkbox" />
               <span>保持登录状态</span>
             </label>
 
             <button class="login-page__submit" type="submit" :disabled="loading">
-              {{ loading ? '登录中...' : '登录' }}
+              {{ loading ? (isRegisterMode ? '注册中...' : '登录中...') : (isRegisterMode ? '注册并登录' : '登录') }}
             </button>
           </form>
 
-          <div class="login-page__divider"><span>或使用以下方式登录</span></div>
+          <!-- <div class="login-page__divider"><span>或使用以下方式登录</span></div>
 
           <div class="login-page__social">
             <button type="button">Facebook</button>
             <button type="button">Google</button>
-          </div>
+          </div> -->
 
-          <p class="login-page__register">还没有账户？<button type="button">立即注册</button></p>
+          <p class="login-page__register">
+            {{ isRegisterMode ? '已有账户？' : '还没有账户？' }}
+            <button type="button" @click="toggleRegisterMode">{{ isRegisterMode ? '去登录' : '立即注册' }}</button>
+          </p>
         </div>
 
         <div class="login-page__links">
@@ -98,18 +106,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 
 const email = ref('')
 const password = ref('')
+const displayName = ref('')
 const remember = ref(false)
 const showPassword = ref(false)
 const loading = ref(false)
+const isRegisterMode = ref(false)
 
 const features = [
   { icon: '✓', title: '智能需求分析', desc: 'AI 辅助需求理解与风险识别', color: 'blue' },
@@ -117,12 +129,33 @@ const features = [
   { icon: '⚡', title: '高效文档产出', desc: '自动生成 PRD、PPT、原型', color: 'green' },
 ]
 
+const toggleRegisterMode = () => {
+  isRegisterMode.value = !isRegisterMode.value
+}
+
 const handleSubmit = async () => {
+  if (!email.value.trim() || !password.value) {
+    ElMessage.warning('请输入邮箱和密码')
+    return
+  }
   loading.value = true
-  await new Promise((resolve) => setTimeout(resolve, 800))
-  authStore.login(email.value || 'demo@example.com')
-  loading.value = false
-  router.replace('/projects')
+  try {
+    if (isRegisterMode.value) {
+      await authStore.register(email.value.trim(), password.value, displayName.value.trim())
+      ElMessage.success('注册成功，已自动登录')
+    }
+    else {
+      await authStore.login(email.value.trim(), password.value)
+    }
+    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/projects'
+    router.replace(redirect)
+  }
+  catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : isRegisterMode.value ? '注册失败' : '登录失败')
+  }
+  finally {
+    loading.value = false
+  }
 }
 </script>
 

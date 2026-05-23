@@ -80,7 +80,15 @@
       "Bash(/Users/mac/xula/ai_sales_genie/.venv/bin/pip install *)",
       "Bash(DATABASE_URL='mysql+aiomysql://root:rjgf1479.@127.0.0.1:3307/agent_runner' /Users/mac/xula/ai_sales_genie/.venv/bin/alembic *)",
       "Bash(DATABASE_URL='mysql+aiomysql://root:rjgf1479.@127.0.0.1:3307/agent_runner_e2e' /Users/mac/xula/ai_sales_genie/.venv/bin/alembic *)",
-      "Bash(APP_ENV=dev APP_HOST=127.0.0.1 APP_PORT=18081 DATABASE_URL='mysql+aiomysql://root:rjgf1479.@127.0.0.1:3307/agent_runner_e2e' STORAGE_BASE_PATH='/Users/mac/xula/ai_sales_genie/agent_runner_test/data_e2e' HERMES_BASE_URL='http://127.0.0.1:8643' HERMES_API_KEY='fiskzcVqn3frVcd' /Users/mac/xula/ai_sales_genie/.venv/bin/python *)"
+      "Bash(APP_ENV=dev APP_HOST=127.0.0.1 APP_PORT=18081 DATABASE_URL='mysql+aiomysql://root:rjgf1479.@127.0.0.1:3307/agent_runner_e2e' STORAGE_BASE_PATH='/Users/mac/xula/ai_sales_genie/agent_runner_test/data_e2e' HERMES_BASE_URL='http://127.0.0.1:8643' HERMES_API_KEY='fiskzcVqn3frVcd' /Users/mac/xula/ai_sales_genie/.venv/bin/python *)",
+      "Bash(openspec instructions *)",
+      "Bash(git *)",
+      "Bash(mariadb *)",
+      "Bash(mycli *)",
+      "Bash(docker exec ai_quote_mysql *)",
+      "Bash(pytest *)",
+      "Bash(python3.11 --version)",
+      "Bash(python3.12 --version)"
     ]
   }
 }

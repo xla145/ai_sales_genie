@@ -1,4 +1,9 @@
+from __future__ import annotations
+
+import json
 from pathlib import Path
+from typing import Any
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from agent_runner.config import settings
@@ -9,6 +14,15 @@ from agent_runner.services.run_service import RunService
 from agent_runner.storage.local_storage import LocalStorage
 
 
+FINAL_DOCUMENT_PATHS = {
+    "需求结构化.md": "requirements.md",
+    "PRD.md": "prd.md",
+    "prd.md": "prd.md",
+    "系统的功能点设计.md": "feature-points.md",
+    "feature-points.md": "feature-points.md",
+}
+
+
 class Runner:
     def __init__(self) -> None:
         self.run_service = RunService()
@@ -17,7 +31,197 @@ class Runner:
         self.artifact_service = ArtifactService()
         self.storage = LocalStorage(settings.storage_base_path)
 
-    async def run_once(self, db: AsyncSession, run_id: str, project_id: str, prompt: str) -> dict:
+    def _build_workspace_prompt(
+        self,
+        *,
+        prompt: str,
+        project_id: str,
+        session_id: str | None,
+        run_id: str,
+        workspace_path: str,
+        workspace_context: str,
+        prototype_version: dict | None,
+    ) -> str:
+        prototype_rule = ""
+        if prototype_version is not None:
+            prototype_rule = (
+                f"本次原型输出版本: {prototype_version['version']}，已基于上一版本复制出完整目录。\n"
+                "如果修改原型，返回路径必须以 `prototype/` 开头，runner 会映射到该版本目录；可以只返回变更文件。\n"
+            )
+        return (
+            f"当前 project_id: {project_id}\n"
+            f"当前 session_id: {session_id or '无'}\n"
+            f"当前 run_id: {run_id}\n"
+            f"当前项目 workspace: {workspace_path}\n"
+            "该 workspace 由宿主系统按项目隔离创建，只能作为当前项目的用户空间使用。\n"
+            "不得读取、复用、覆盖或删除其他项目、其他 run/session 的文件。\n"
+            "所有产物路径、最终回复中的文件路径都必须是相对当前 workspace 的相对路径。\n"
+            "禁止使用 /opt/data、/opt/hermes、/tmp、/workspace 或任何其他绝对路径作为真实读写路径。\n"
+            "如果输入材料中包含绝对路径，只能作为历史描述，不得作为真实写入位置。\n"
+            "如果你生成、修改或删除了文件，最终必须只返回 JSON，不要返回 Markdown 总结。\n"
+            "JSON 格式必须是：{\"files\":[{\"path\":\"相对路径\",\"content\":\"完整文件内容\"}],\"deleted_files\":[\"相对路径\"]}。\n"
+            "files[].content 必须包含完整文件内容；不得只描述文件已生成，也不得只给产物清单。\n"
+            "如果没有文件变更，也返回：{\"files\":[],\"deleted_files\":[]}。\n"
+            "系统只保存最终产物：需求结构化、PRD、功能点、原型；不要返回页面详细设计、检查报告、临时分析等中间产物。\n"
+            f"{prototype_rule}\n"
+            f"当前 workspace 已有文件内容：\n{workspace_context}\n\n"
+            f"用户任务：{prompt}"
+        )
+
+    def _build_workspace_context(self, workspace_dir: Path, prototype_dir: Path | None = None) -> str:
+        sections: list[str] = []
+        if not workspace_dir.exists() and prototype_dir is None:
+            return "（无）"
+
+        for path in sorted(workspace_dir.rglob("*")) if workspace_dir.exists() else []:
+            if not path.is_file():
+                continue
+            relative_path = path.relative_to(workspace_dir)
+            if any(part.startswith(".") for part in relative_path.parts):
+                continue
+            if path.stat().st_size > 80_000:
+                sections.append(f"## {relative_path}\n（文件过大，已省略内容）")
+                continue
+            try:
+                content = path.read_text(encoding="utf-8")
+            except UnicodeDecodeError:
+                continue
+            sections.append(f"## {relative_path}\n\n{content}")
+
+        if prototype_dir is not None and prototype_dir.is_dir():
+            for path in sorted(prototype_dir.rglob("*")):
+                if not path.is_file():
+                    continue
+                relative_path = Path("prototype") / path.relative_to(prototype_dir)
+                if path.stat().st_size > 80_000:
+                    sections.append(f"## {relative_path}\n（文件过大，已省略内容）")
+                    continue
+                try:
+                    content = path.read_text(encoding="utf-8")
+                except UnicodeDecodeError:
+                    continue
+                sections.append(f"## {relative_path}\n\n{content}")
+        return "\n\n".join(sections) if sections else "（无）"
+
+    def _extract_json_payload(self, content: str) -> dict[str, Any] | None:
+        candidates = [content.strip()]
+        if "```" in content:
+            segments = content.split("```")
+            for segment in segments[1::2]:
+                stripped = segment.strip()
+                if stripped.startswith("json"):
+                    stripped = stripped[4:].lstrip()
+                if stripped:
+                    candidates.append(stripped)
+
+        for candidate in candidates:
+            try:
+                payload = json.loads(candidate)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(payload, dict):
+                return payload
+        return None
+
+    def _is_final_document_path(self, relative_path: str) -> bool:
+        if relative_path in FINAL_DOCUMENT_PATHS:
+            return True
+        return relative_path.startswith("prototype/")
+
+    def _target_for_output_path(self, workspace_root: Path, relative_path: str, prototype_dir: Path | None) -> tuple[Path, str]:
+        mapped_path = FINAL_DOCUMENT_PATHS.get(relative_path, relative_path)
+        if mapped_path.startswith("prototype/"):
+            if prototype_dir is None:
+                raise ValueError(f"prototype output is not allowed for this run: {relative_path}")
+            return prototype_dir / mapped_path.removeprefix("prototype/"), mapped_path
+        return workspace_root / mapped_path, mapped_path
+
+    def _materialize_response_files(
+        self,
+        workspace_dir: Path,
+        content: str,
+        *,
+        prototype_dir: Path | None = None,
+    ) -> tuple[list[dict], list[str]]:
+        payload = self._extract_json_payload(content)
+        if payload is None:
+            return [], []
+
+        files = payload.get("files")
+        if not isinstance(files, list):
+            files = []
+        deleted_files = payload.get("deleted_files")
+        if not isinstance(deleted_files, list):
+            deleted_files = []
+
+        workspace_root = workspace_dir.resolve()
+        prototype_root = prototype_dir.resolve() if prototype_dir is not None else None
+        written_files: list[dict] = []
+        for item in files:
+            if not isinstance(item, dict):
+                continue
+            relative_path = item.get("path")
+            file_content = item.get("content")
+            if not isinstance(relative_path, str) or not relative_path:
+                continue
+            if not isinstance(file_content, str):
+                continue
+
+            candidate = Path(relative_path)
+            if candidate.is_absolute():
+                raise ValueError(f"absolute path is not allowed: {relative_path}")
+            if not self._is_final_document_path(relative_path):
+                continue
+
+            target, mapped_path = self._target_for_output_path(workspace_root, relative_path, prototype_dir)
+            target = target.resolve()
+            if prototype_root is not None and mapped_path.startswith("prototype/"):
+                if target != prototype_root and prototype_root not in target.parents:
+                    raise ValueError(f"path escapes prototype version: {relative_path}")
+            elif target != workspace_root and workspace_root not in target.parents:
+                raise ValueError(f"path escapes workspace: {relative_path}")
+
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(file_content, encoding="utf-8")
+            written_files.append(
+                {
+                    "path": mapped_path,
+                    "storage_path": str(target),
+                    "size_bytes": target.stat().st_size,
+                }
+            )
+
+        deleted_paths: list[str] = []
+        for item in deleted_files:
+            if not isinstance(item, str) or not item:
+                continue
+            candidate = Path(item)
+            if candidate.is_absolute():
+                raise ValueError(f"absolute path is not allowed: {item}")
+            if not self._is_final_document_path(item):
+                continue
+            target, mapped_path = self._target_for_output_path(workspace_root, item, prototype_dir)
+            target = target.resolve()
+            if prototype_root is not None and mapped_path.startswith("prototype/"):
+                if target != prototype_root and prototype_root not in target.parents:
+                    raise ValueError(f"path escapes prototype version: {item}")
+            elif target != workspace_root and workspace_root not in target.parents:
+                raise ValueError(f"path escapes workspace: {item}")
+            if target.is_file():
+                target.unlink()
+                deleted_paths.append(mapped_path)
+
+        return written_files, deleted_paths
+
+    async def run_once(
+        self,
+        db: AsyncSession,
+        run_id: str,
+        project_id: str,
+        prompt: str,
+        *,
+        session_id: str | None = None,
+    ) -> dict:
         await self.run_service.update_run_status(
             db,
             run_id,
@@ -37,26 +241,116 @@ class Runner:
         )
 
         try:
-            result = await self.hermes_service.plan(prompt)
+            paths = self.storage.build_project_paths(project_id)
+            workspace_dir = Path(paths["current"])
+            is_prototype_run = "prototype" in run_id or "原型" in prompt or "prototype" in prompt.lower()
+            prototype_version = None
+            prototype_dir = None
+            if is_prototype_run:
+                prototype_version = self.storage.create_next_prototype_version(
+                    project_id,
+                    run_id=run_id,
+                    user_instruction=prompt,
+                )
+                prototype_dir = Path(prototype_version["storage_path"])
+            workspace_prompt = self._build_workspace_prompt(
+                prompt=prompt,
+                project_id=project_id,
+                session_id=session_id,
+                run_id=run_id,
+                workspace_path=paths["current"],
+                workspace_context=self._build_workspace_context(workspace_dir, prototype_dir=prototype_dir),
+                prototype_version=prototype_version,
+            )
+            result = await self.hermes_service.plan(workspace_prompt)
             patch_text = result.get("patch") or ""
 
-            paths = self.storage.build_project_paths(project_id)
+            written_files, deleted_files = self._materialize_response_files(
+                workspace_dir,
+                patch_text,
+                prototype_dir=prototype_dir,
+            )
+
             run_dir = Path(paths["runs"]) / run_id
             run_dir.mkdir(parents=True, exist_ok=True)
+
+            output_file = run_dir / "hermes_output.md"
+            output_file.write_text(patch_text, encoding="utf-8")
+
             patch_path = run_dir / "patch.diff"
             patch_path.write_text(patch_text, encoding="utf-8")
 
-            artifact = await self.artifact_service.save_artifact(
+            manifest_file = run_dir / "manifest.json"
+            manifest_file.write_text(
+                json.dumps(
+                    {
+                        "project_id": project_id,
+                        "run_id": run_id,
+                        "workspace_path": str(workspace_dir),
+                        "prototype_version": prototype_version,
+                        "written_files": written_files,
+                        "deleted_files": deleted_files,
+                        "json_payload_found": bool(written_files or deleted_files or self._extract_json_payload(patch_text) is not None),
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
+
+            output_artifact = await self.artifact_service.save_artifact(
+                db,
+                {
+                    "project_id": project_id,
+                    "run_id": run_id,
+                    "artifact_type": "generated_file",
+                    "name": output_file.name,
+                    "storage_path": str(output_file),
+                    "mime_type": "text/markdown",
+                    "size_bytes": output_file.stat().st_size,
+                    "metadata": {"source": "hermes"},
+                },
+            )
+
+            patch_artifact = await self.artifact_service.save_artifact(
                 db,
                 {
                     "project_id": project_id,
                     "run_id": run_id,
                     "artifact_type": "patch",
-                    "name": "patch.diff",
+                    "name": patch_path.name,
                     "storage_path": str(patch_path),
                     "mime_type": "text/x-diff",
                     "size_bytes": patch_path.stat().st_size,
                     "metadata": {"source": "hermes"},
+                },
+            )
+
+            manifest_artifact = await self.artifact_service.save_artifact(
+                db,
+                {
+                    "project_id": project_id,
+                    "run_id": run_id,
+                    "artifact_type": "manifest",
+                    "name": manifest_file.name,
+                    "storage_path": str(manifest_file),
+                    "mime_type": "application/json",
+                    "size_bytes": manifest_file.stat().st_size,
+                    "metadata": {"source": "runner"},
+                },
+            )
+
+            await self.event_service.emit(
+                db,
+                {
+                    "project_id": project_id,
+                    "run_id": run_id,
+                    "event_type": "generated_file_created",
+                    "message": "hermes output file generated",
+                    "payload": {
+                        "path": str(output_file),
+                        "artifact_id": output_artifact["artifact_id"],
+                    },
                 },
             )
 
@@ -69,10 +363,31 @@ class Runner:
                     "message": "patch generated",
                     "payload": {
                         "path": str(patch_path),
-                        "artifact_id": artifact["artifact_id"],
+                        "artifact_id": patch_artifact["artifact_id"],
                     },
                 },
             )
+
+            await self.event_service.emit(
+                db,
+                {
+                    "project_id": project_id,
+                    "run_id": run_id,
+                    "event_type": "workspace_files_materialized",
+                    "message": "hermes files materialized into project workspace",
+                    "payload": {
+                        "workspace_path": str(workspace_dir),
+                        "prototype_version": prototype_version,
+                        "written_files": written_files,
+                        "deleted_files": deleted_files,
+                        "manifest_artifact_id": manifest_artifact["artifact_id"],
+                    },
+                },
+            )
+
+            if prototype_version is not None:
+                self.storage.finalize_prototype_version(project_id, prototype_version["version"])
+                prototype_version["status"] = "success"
 
             run = await self.run_service.update_run_status(
                 db,
@@ -86,6 +401,29 @@ class Runner:
                 "run_id": run_id,
                 "status": "success",
                 "patch_path": str(patch_path),
+                "generated_files": written_files,
+                "deleted_files": deleted_files,
+                "prototype_version": prototype_version,
+                "artifacts": [
+                    {
+                        "artifact_id": output_artifact["artifact_id"],
+                        "name": output_file.name,
+                        "artifact_type": output_artifact["artifact_type"],
+                        "storage_path": str(output_file),
+                    },
+                    {
+                        "artifact_id": patch_artifact["artifact_id"],
+                        "name": patch_path.name,
+                        "artifact_type": patch_artifact["artifact_type"],
+                        "storage_path": str(patch_path),
+                    },
+                    {
+                        "artifact_id": manifest_artifact["artifact_id"],
+                        "name": manifest_file.name,
+                        "artifact_type": manifest_artifact["artifact_type"],
+                        "storage_path": str(manifest_file),
+                    },
+                ],
                 "run": run,
             }
         except Exception as exc:

@@ -7,6 +7,75 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 
+class RequirementBasicItem(BaseModel):
+    projectName: str = ""
+    projectSummary: str = ""
+    industry: str = ""
+    projectType: str = ""
+    keywords: str = ""
+
+
+class RequirementCoreItem(BaseModel):
+    background: str = ""
+    goal: str = ""
+    users: str = ""
+    painPoints: str = ""
+
+
+class RequirementScenarioItem(BaseModel):
+    key: str = ""
+    title: str = ""
+    description: str = ""
+    flow: str = ""
+
+
+class RequirementFunctions(BaseModel):
+    functionDesc: dict[str, str] = Field(default_factory=dict)
+    nonFunction: dict[str, str] = Field(default_factory=dict)
+    constraints: dict[str, str] = Field(default_factory=dict)
+
+
+class RequirementRiskItem(BaseModel):
+    key: str = ""
+    title: str = ""
+    level: str = "中"
+    description: str = ""
+    impact: str = ""
+    strategy: str = ""
+
+
+class RequirementPendingItem(BaseModel):
+    title: str = ""
+    text: str = ""
+    checked: bool = False
+
+
+class RequirementPending(BaseModel):
+    unknownInfo: str = ""
+    assumptions: str = ""
+    items: list[RequirementPendingItem] = Field(default_factory=list)
+
+
+class RequirementAttachmentItem(BaseModel):
+    name: str = ""
+    meta: str = ""
+
+
+class RequirementSupplement(BaseModel):
+    notes: str = ""
+
+
+class RequirementAnalysis(BaseModel):
+    basic: RequirementBasicItem = Field(default_factory=RequirementBasicItem)
+    core: RequirementCoreItem = Field(default_factory=RequirementCoreItem)
+    scenarios: list[RequirementScenarioItem] = Field(default_factory=list)
+    functions: RequirementFunctions = Field(default_factory=RequirementFunctions)
+    risks: list[RequirementRiskItem] = Field(default_factory=list)
+    pending: RequirementPending = Field(default_factory=RequirementPending)
+    attachments: list[RequirementAttachmentItem] = Field(default_factory=list)
+    supplement: RequirementSupplement = Field(default_factory=RequirementSupplement)
+
+
 class ProjectOverviewPatch(BaseModel):
     name: str | None = None
     description: str | None = None
@@ -38,6 +107,8 @@ class ProjectStatus(str, Enum):
 
 class Project(BaseModel):
     project_id: str
+    created_id: str | None = None
+    update_id: str | None = None
     name: str
     description: str | None = None
     status: ProjectStatus = ProjectStatus.CREATED

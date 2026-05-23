@@ -11,7 +11,6 @@ import PricingView from '@/views/workspace/PricingView.vue'
 import DevelopmentView from '@/views/workspace/DevelopmentView.vue'
 import SystemConfigView from '@/views/workspace/SystemConfigView.vue'
 import TaskListView from '@/views/workspace/TaskListView.vue'
-import { useMock } from '@/config/env'
 import { useAuthStore } from '@/stores/auth'
 
 const router = createRouter({
@@ -87,10 +86,6 @@ const router = createRouter({
 router.beforeEach((to) => {
   const authStore = useAuthStore()
   authStore.hydrate()
-
-  if (useMock && !authStore.isLoggedIn) {
-    authStore.login('demo@example.com')
-  }
 
   if (to.meta.public) {
     if (authStore.isLoggedIn && to.name === 'login') {

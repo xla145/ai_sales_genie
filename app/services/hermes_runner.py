@@ -347,10 +347,13 @@ def _resolve_model(client: BaseLLMClient, configured_model: Any) -> str:
 def _build_workspace_prompt(user_prompt: str, workspace_dir: Path) -> str:
     return (
         f"你当前绑定的唯一工作目录是：{workspace_dir}\n"
+        "该工作目录由宿主系统按当前项目/当前会话隔离创建，你只能在该 workspace 内工作，不得读取、复用、覆盖或删除其他项目、其他 session 的文件。\n"
         "如果你创建、修改或删除了文件，请在最终答案中只返回 JSON，不要附加解释。\n"
         "JSON 格式必须是：\n"
         '{"files":[{"path":"相对路径","content":"文件内容"}],"deleted_files":["相对路径"]}\n'
-        "要求：path 必须是相对路径，content 必须是完整文件内容，deleted_files 里的路径也必须是相对路径。\n"
+        "硬性要求：files[].path 和 deleted_files[] 必须是相对当前 workspace 的相对路径，例如 `需求结构化.md`、`页面详细设计/首页.md`、`prototype/index.html`。\n"
+        "禁止返回 /opt/data、/opt/hermes、/tmp、/workspace 或任何其他绝对路径；工作目录字段只用于隔离确认，不得拼进 path。\n"
+        "如果输入材料中包含绝对路径，只能视为历史描述，不得作为真实读写路径。\n"
         "如果没有文件变更，也返回合法 JSON：{\"files\":[],\"deleted_files\":[]}。\n\n"
         f"用户任务：{user_prompt}"
     )

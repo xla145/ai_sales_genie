@@ -12,10 +12,10 @@ class HeaderStore:
     def upsert_project(self, project: Project) -> None:
         raise NotImplementedError
 
-    def get_project(self, project_id: str) -> Project | None:
+    def get_project(self, project_id: str, user_id: str) -> Project | None:
         raise NotImplementedError
 
-    def list_projects(self) -> list[Project]:
+    def list_projects(self, user_id: str) -> list[Project]:
         raise NotImplementedError
 
     def delete_project(self, project_id: str) -> None:
@@ -56,12 +56,14 @@ class InMemoryHeaderStore(HeaderStore):
     def upsert_project(self, project: Project) -> None:
         self.projects[project.project_id] = project.model_copy(deep=True)
 
-    def get_project(self, project_id: str) -> Project | None:
+    def get_project(self, project_id: str, user_id: str) -> Project | None:
         project = self.projects.get(project_id)
-        return project.model_copy(deep=True) if project is not None else None
+        if project is None or project.created_id != user_id:
+            return None
+        return project.model_copy(deep=True)
 
-    def list_projects(self) -> list[Project]:
-        return [project.model_copy(deep=True) for project in self.projects.values()]
+    def list_projects(self, user_id: str) -> list[Project]:
+        return [project.model_copy(deep=True) for project in self.projects.values() if project.created_id == user_id]
 
     def delete_project(self, project_id: str) -> None:
         self.projects.pop(project_id, None)

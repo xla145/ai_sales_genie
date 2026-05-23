@@ -18,6 +18,8 @@ class SessionStatus(str, Enum):
 class ProjectSession(BaseModel):
     session_id: str
     project_id: str
+    created_id: str | None = None
+    update_id: str | None = None
     workspace_path: str
     conversation: str
     base_url: str | None = None

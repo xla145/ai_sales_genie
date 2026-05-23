@@ -41,12 +41,35 @@
               </div>
             </button>
             <div v-if="attachmentItems.length" class="requirement-input-page__attachments">
-              <div v-for="item in attachmentItems" :key="`${item.name}-${item.meta}`" class="requirement-input-page__attachment">
-                <div>
-                  <strong>{{ item.name }}</strong>
-                  <span>{{ item.meta }}</span>
+              <button
+                v-if="attachmentItems.length > 1"
+                type="button"
+                class="requirement-input-page__attachments-toggle"
+                @click="attachmentsExpanded = !attachmentsExpanded"
+              >
+                <span class="requirement-input-page__attachments-summary">
+                  已上传 {{ attachmentItems.length }} 个文件
+                </span>
+                <span class="requirement-input-page__attachments-chevron" :class="{ 'requirement-input-page__attachments-chevron--open': attachmentsExpanded }">
+                  ⌄
+                </span>
+              </button>
+
+              <div
+                class="requirement-input-page__attachments-list"
+                :class="{ 'requirement-input-page__attachments-list--collapsed': attachmentItems.length > 1 && !attachmentsExpanded }"
+              >
+                <div
+                  v-for="item in visibleAttachmentItems"
+                  :key="`${item.name}-${item.meta}`"
+                  class="requirement-input-page__attachment"
+                >
+                  <div>
+                    <strong>{{ item.name }}</strong>
+                    <span>{{ item.meta }}</span>
+                  </div>
+                  <button type="button" @click="removeAttachment(item)">删除</button>
                 </div>
-                <button type="button" @click="removeAttachment(item)">删除</button>
               </div>
             </div>
           </article>
@@ -86,6 +109,14 @@ const projectStore = useProjectStore()
 const saving = ref(false)
 const projectSummary = ref('')
 const attachmentItems = ref<Array<{ name: string; meta: string }>>([])
+const attachmentsExpanded = ref(false)
+
+const visibleAttachmentItems = computed(() => {
+  if (attachmentItems.value.length <= 1 || attachmentsExpanded.value) {
+    return attachmentItems.value
+  }
+  return []
+})
 
 const project = computed(() => projectStore.current)
 const projectMeta = computed(() => (project.value?.config ?? {}) as ProjectConfig)
@@ -148,12 +179,18 @@ const handleAttachmentUpload = async () => {
     },
     ...nextRequirement.attachments,
   ]
+  if (nextAttachments.length > 1) {
+    attachmentsExpanded.value = false
+  }
   await saveRequirementAnalysis({ attachments: nextAttachments }, '附件记录已保存')
 }
 
 const removeAttachment = async (target: { name: string; meta: string }) => {
   const nextRequirement = normalizeRequirementAnalysis(projectMeta.value)
   const nextAttachments = nextRequirement.attachments.filter((item) => !(item.name === target.name && item.meta === target.meta))
+  if (nextAttachments.length <= 1) {
+    attachmentsExpanded.value = false
+  }
   await saveRequirementAnalysis({ attachments: nextAttachments }, '附件记录已删除')
 }
 </script>
@@ -293,6 +330,45 @@ const removeAttachment = async (target: { name: string; meta: string }) => {
   display: grid;
   gap: 8px;
   margin-top: 16px;
+}
+
+.requirement-input-page__attachments-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  cursor: pointer;
+  font: inherit;
+}
+
+.requirement-input-page__attachments-summary {
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.requirement-input-page__attachments-chevron {
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.requirement-input-page__attachments-chevron--open {
+  transform: rotate(180deg);
+}
+
+.requirement-input-page__attachments-list {
+  display: grid;
+  gap: 8px;
+}
+
+.requirement-input-page__attachments-list--collapsed .requirement-input-page__attachment:last-child {
+  margin-bottom: 0;
 }
 
 .requirement-input-page__attachment {

@@ -1,7 +1,12 @@
 <template>
   <ProjectLayout>
     <div class="requirement-page">
-      <RequirementSectionNav :active-key="currentSection" :items="navItems" @select="handleSectionSelect" />
+      <RequirementSectionNav
+        :nav-title="'需求分析与评估'"
+        :active-key="currentSection"
+        :items="navItems"
+        @select="handleSectionSelect"
+      />
 
       <div class="requirement-page__main">
         <div class="requirement-page__container">
@@ -134,7 +139,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import ProjectLayout from '@/layouts/ProjectLayout.vue'
@@ -167,6 +172,7 @@ const analysisVisible = ref(false)
 const saving = ref(false)
 const loading = ref(false)
 const hasChanges = ref(false)
+const hydrated = ref(false)
 
 const projectId = computed(() => String(route.params.projectId ?? ''))
 const currentSection = computed(() => String(route.query.section ?? 'overview'))
@@ -437,14 +443,27 @@ const analysisItems = computed(() => [
 const loadProjectRequirementAnalysis = async () => {
   if (!projectId.value) return
   loading.value = true
+  hydrated.value = false
   try {
     const project = await projectStore.fetchProject(projectId.value)
     applyRequirementAnalysis(project.config?.requirementAnalysis)
   }
   finally {
     loading.value = false
+    hydrated.value = true
+    hasChanges.value = false
   }
 }
+
+watch(
+  [basicItems, coreItems, scenarioItems, riskItems, functionItems, pendingItems, pendingUnknownInfo, pendingAssumptions, supplementNotes],
+  () => {
+    if (hydrated.value) {
+      hasChanges.value = true
+    }
+  },
+  { deep: true },
+)
 
 const saveRequirementAnalysis = async () => {
   if (!projectId.value) return

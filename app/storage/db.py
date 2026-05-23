@@ -5,7 +5,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
@@ -42,10 +42,40 @@ def get_database_url(base_dir: Path) -> str:
 
 def build_engine(base_dir: Path) -> Engine:
     database_url = get_database_url(base_dir)
+    if database_url.startswith("mysql+aiomysql://"):
+        database_url = database_url.replace("mysql+aiomysql://", "mysql+pymysql://", 1)
+
     connect_args: dict[str, object] = {}
     if database_url.startswith("sqlite"):
         connect_args["check_same_thread"] = False
     return create_engine(database_url, future=True, pool_pre_ping=True, connect_args=connect_args)
+
+
+def ensure_audit_user_columns(engine: Engine) -> None:
+    inspector = inspect(engine)
+    table_names = set(inspector.get_table_names())
+    audited_tables = {
+        "projects",
+        "requirement_analyses",
+        "requirement_scenarios",
+        "requirement_risks",
+        "requirement_pending_items",
+        "project_attachments",
+        "project_sessions",
+        "project_runs",
+        "workflows",
+    }
+
+    dialect = engine.dialect.name
+    with engine.begin() as connection:
+        for table_name in sorted(audited_tables & table_names):
+            columns = {column["name"] for column in inspector.get_columns(table_name)}
+            for column_name in ("created_id", "update_id"):
+                if column_name not in columns:
+                    if dialect == "sqlite":
+                        connection.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {column_name} VARCHAR(32)"))
+                    else:
+                        connection.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {column_name} VARCHAR(32) NULL"))
 
 
 def build_session_factory(engine: Engine) -> sessionmaker[Session]:

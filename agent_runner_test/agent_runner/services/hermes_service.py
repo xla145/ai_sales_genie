@@ -24,7 +24,7 @@ class HermesService:
                 },
                 method="POST",
             )
-            with urllib.request.urlopen(req, timeout=120) as resp:
+            with urllib.request.urlopen(req, timeout=600) as resp:
                 raw = resp.read().decode("utf-8")
                 if not raw:
                     return {}

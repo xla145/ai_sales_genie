@@ -100,6 +100,8 @@ export interface ProjectConfig extends Record<string, unknown> {
 
 export interface Project {
   project_id: string
+  created_id: string | null
+  update_id: string | null
   name: string
   description: string | null
   status: ProjectStatus

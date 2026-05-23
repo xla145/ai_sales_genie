@@ -45,8 +45,8 @@ class RunService:
         self.header_store = header_store
         self.running_tasks: dict[str, asyncio.Task] = {}
 
-    def list_runs(self, project_id: str, session_id: str | None = None) -> list[ProjectRun]:
-        project, session = self._resolve_project_and_session(project_id, session_id)
+    def list_runs(self, project_id: str, user_id: str, session_id: str | None = None) -> list[ProjectRun]:
+        project, session = self._resolve_project_and_session(project_id, user_id, session_id)
         if self.header_store is not None:
             runs = self.header_store.list_runs(project_id, session_id)
             hydrated: list[ProjectRun] = []
@@ -63,8 +63,8 @@ class RunService:
                 runs.append(ProjectRun.model_validate(data))
         return runs
 
-    def get_run(self, project_id: str, run_id: str, session_id: str | None = None) -> ProjectRun:
-        project = self.project_service.get_project(project_id)
+    def get_run(self, project_id: str, user_id: str, run_id: str, session_id: str | None = None) -> ProjectRun:
+        project = self.project_service.get_project_for_user(project_id, user_id)
         if self.header_store is not None:
             stored = self.header_store.get_run(run_id)
             if stored is None or stored.project_id != project.project_id:
@@ -82,15 +82,15 @@ class RunService:
                 return run
         raise FileNotFoundError(run_id)
 
-    def read_logs(self, project_id: str, run_id: str, session_id: str | None = None) -> str:
-        run = self.get_run(project_id, run_id, session_id=session_id)
+    def read_logs(self, project_id: str, user_id: str, run_id: str, session_id: str | None = None) -> str:
+        run = self.get_run(project_id, user_id, run_id, session_id=session_id)
         log_path = Path(run.log_path)
         if not log_path.exists():
             return ""
         return log_path.read_text(encoding="utf-8")
 
-    async def create_run(self, project_id: str, payload: CreateRunRequest) -> ProjectRun:
-        project, session = self._resolve_project_and_session(project_id, payload.session_id)
+    async def create_run(self, project_id: str, user_id: str, payload: CreateRunRequest) -> ProjectRun:
+        project, session = self._resolve_project_and_session(project_id, user_id, payload.session_id)
         self._validate_input_files(session, payload.input_files, payload.phase_name)
         run_id = f"run_{uuid4().hex[:8]}"
         now = datetime.now()
@@ -105,12 +105,14 @@ class RunService:
         project.config = merged_config
         project.status = ProjectStatus.RUNNING
         project.current_session_id = session.session_id
-        self.project_service.save_project(project)
+        self.project_service.save_project(project, user_id=user_id)
 
         run = ProjectRun(
             run_id=run_id,
             project_id=project_id,
             session_id=session.session_id,
+            created_id=project.created_id,
+            update_id=project.update_id,
             phase_id=payload.phase_id,
             phase_name=payload.phase_name,
             skill_name=payload.skill_name,
@@ -160,13 +162,14 @@ class RunService:
         finally:
             run.ended_at = datetime.now()
             run.result_summary_path = str(run_output_path(session, run.run_id))
+            run.update_id = project.update_id
             self._save_run(session, run)
-            self.project_service.save_project(project)
+            self.project_service.save_project(project, user_id=project.update_id)
             self.running_tasks.pop(task_key, None)
 
-    async def wait_for_run(self, project_id: str, run_id: str, session_id: str, *, poll_interval: float = 0.1) -> ProjectRun:
+    async def wait_for_run(self, project_id: str, user_id: str, run_id: str, session_id: str, *, poll_interval: float = 0.1) -> ProjectRun:
         while True:
-            run = self.get_run(project_id, run_id, session_id=session_id)
+            run = self.get_run(project_id, user_id, run_id, session_id=session_id)
             if run.status in {RunStatus.SUCCESS, RunStatus.FAILED}:
                 if run.status == RunStatus.FAILED:
                     raise RuntimeError(run.error_message or 'Run failed')
@@ -180,16 +183,17 @@ class RunService:
     def _resolve_project_and_session(
         self,
         project_id: str,
+        user_id: str,
         session_id: str | None,
     ) -> tuple[Project, ProjectSession]:
-        project = self.project_service.get_project(project_id)
+        project = self.project_service.get_project_for_user(project_id, user_id)
         if session_id:
             session = self.session_service.resume_session(project, session_id)
         else:
             session = self.session_service.get_or_create_default_session(project)
             if project.current_session_id != session.session_id:
                 project.current_session_id = session.session_id
-                self.project_service.save_project(project)
+                self.project_service.save_project(project, user_id=user_id)
         return project, session
 
     def _save_run(self, session: ProjectSession, run: ProjectRun) -> None:

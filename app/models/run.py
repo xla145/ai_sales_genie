@@ -32,6 +32,8 @@ class ProjectRun(BaseModel):
     run_id: str
     project_id: str
     session_id: str
+    created_id: str | None = None
+    update_id: str | None = None
     phase_id: PhaseId
     phase_name: str
     skill_name: str
@@ -91,6 +93,8 @@ class WorkflowRun(BaseModel):
     workflow_id: str
     project_id: str
     session_id: str
+    created_id: str | None = None
+    update_id: str | None = None
     status: WorkflowStatus = WorkflowStatus.PENDING
     phases: list[WorkflowPhaseState] = Field(default_factory=list)
     current_phase_id: PhaseId | None = None

@@ -51,8 +51,8 @@ class WorkflowService:
         self.subagent_pool = SubagentPool()
         self.running_tasks: dict[str, object] = {}
 
-    async def create_workflow(self, project_id: str, payload: CreateWorkflowRequest) -> WorkflowRun:
-        project, session = self._resolve_project_and_session(project_id, payload.session_id)
+    async def create_workflow(self, project_id: str, user_id: str, payload: CreateWorkflowRequest) -> WorkflowRun:
+        project, session = self._resolve_project_and_session(project_id, user_id, payload.session_id)
         workflow_id = f"wf_{uuid4().hex[:8]}"
         now = datetime.now()
         log_path = workflow_log_path(session, workflow_id)
@@ -66,12 +66,14 @@ class WorkflowService:
         project.config = merged_config
         project.status = ProjectStatus.RUNNING
         project.current_session_id = session.session_id
-        self.project_service.save_project(project)
+        self.project_service.save_project(project, user_id=user_id)
 
         workflow = WorkflowRun(
             workflow_id=workflow_id,
             project_id=project.project_id,
             session_id=session.session_id,
+            created_id=project.created_id,
+            update_id=project.update_id,
             phases=[
                 WorkflowPhaseState(
                     phase_id=definition.phase_id,
@@ -92,8 +94,8 @@ class WorkflowService:
         self.running_tasks[task_key] = task
         return workflow
 
-    def get_workflow(self, project_id: str, workflow_id: str, session_id: str | None = None) -> WorkflowRun:
-        project = self.project_service.get_project(project_id)
+    def get_workflow(self, project_id: str, user_id: str, workflow_id: str, session_id: str | None = None) -> WorkflowRun:
+        project = self.project_service.get_project_for_user(project_id, user_id)
         if self.header_store is not None:
             workflow = self.header_store.get_workflow(workflow_id)
             if workflow is None or workflow.project_id != project.project_id:
@@ -106,9 +108,9 @@ class WorkflowService:
             return self.state_store.get_workflow(session, workflow_id)
         return self.state_store.get_workflow_for_project(project, workflow_id)
 
-    def list_subtasks(self, project_id: str, workflow_id: str, session_id: str | None = None) -> list[SubtaskRun]:
-        project = self.project_service.get_project(project_id)
-        workflow = self.get_workflow(project_id, workflow_id, session_id=session_id)
+    def list_subtasks(self, project_id: str, user_id: str, workflow_id: str, session_id: str | None = None) -> list[SubtaskRun]:
+        project = self.project_service.get_project_for_user(project_id, user_id)
+        workflow = self.get_workflow(project_id, user_id, workflow_id, session_id=session_id)
         session = self.session_service.resume_session(project, workflow.session_id)
         return self.state_store.list_subtasks(session, workflow_id)
 
@@ -224,10 +226,11 @@ class WorkflowService:
             logger.error(f"Workflow failed: {exc}")
         finally:
             workflow.ended_at = datetime.now()
+            workflow.update_id = project.update_id
             self.state_store.save_workflow(session, workflow)
             if self.header_store is not None:
                 self.header_store.upsert_workflow(workflow)
-            self.project_service.save_project(project)
+            self.project_service.save_project(project, user_id=project.update_id)
             self.running_tasks.pop(task_key, None)
 
     def _save_workflow(self, session: ProjectSession, workflow: WorkflowRun) -> None:
@@ -238,16 +241,17 @@ class WorkflowService:
     def _resolve_project_and_session(
         self,
         project_id: str,
+        user_id: str,
         session_id: str | None,
     ) -> tuple[Project, ProjectSession]:
-        project = self.project_service.get_project(project_id)
+        project = self.project_service.get_project_for_user(project_id, user_id)
         if session_id:
             session = self.session_service.resume_session(project, session_id)
         else:
             session = self.session_service.get_or_create_default_session(project)
             if project.current_session_id != session.session_id:
                 project.current_session_id = session.session_id
-                self.project_service.save_project(project)
+                self.project_service.save_project(project, user_id=user_id)
         return project, session
 
     def _validate_inputs(self, session: ProjectSession, phase_name: str, input_files: list[str]) -> None:

@@ -29,6 +29,10 @@
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         {{ pendingCount }} 个待办
       </div>
+      <div class="project-layout__user">
+        <span>{{ displayName }}</span>
+        <button type="button" class="project-layout__logout" @click="handleLogout">退出</button>
+      </div>
     </header>
 
     <nav class="project-layout__tabs" aria-label="Project sections">
@@ -69,16 +73,25 @@ import { useRoute, useRouter } from 'vue-router'
 import TabIcon from '@/components/icons/TabIcon.vue'
 import { PROJECT_TABS } from '@/constants/projectTabs'
 import { useProjectContext } from '@/composables/useProjectContext'
+import { useAuthStore } from '@/stores/auth'
 import { useProjectStore } from '@/stores/project'
 import { useRunStore } from '@/stores/run'
 import type { ProjectConfig } from '@/types/project'
 
 const router = useRouter()
 const route = useRoute()
+const authStore = useAuthStore()
 const projectStore = useProjectStore()
 const runStore = useRunStore()
 
 useProjectContext()
+
+const displayName = computed(() => authStore.displayName)
+
+const handleLogout = async () => {
+  await authStore.logout()
+  router.push('/login')
+}
 
 const tabs = PROJECT_TABS
 
@@ -206,6 +219,30 @@ const handleTabChange = (name: string) => {
 .project-layout__todo svg {
   width: 16px;
   height: 16px;
+}
+
+.project-layout__user {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: #475569;
+  font-size: 14px;
+}
+
+.project-layout__logout {
+  padding: 6px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #64748b;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+}
+
+.project-layout__logout:hover {
+  border-color: #cbd5e1;
+  color: #334155;
 }
 
 .project-layout__tabs {

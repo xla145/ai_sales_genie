@@ -19,44 +19,67 @@ class SqlHeaderStore(HeaderStore):
     def upsert_project(self, project: Project) -> None:
         with session_scope(self.session_factory) as session:
             record = session.get(ProjectRecord, project.project_id) or ProjectRecord(project_id=project.project_id)
+            record.created_id = project.created_id
+            record.update_id = project.update_id
             record.name = project.name
             record.description = project.description
             record.status = project.status.value
             record.workspace_path = project.workspace_path
             record.current_session_id = project.current_session_id
+            record.client_info = self._overview_value(project, "clientInfo")
+            record.province = self._overview_value(project, "province")
+            record.city = self._overview_value(project, "city")
+            record.stage = self._overview_value(project, "stage")
+            record.industry = self._overview_value(project, "industry")
             record.created_at = project.created_at
             record.updated_at = project.updated_at
             session.add(record)
 
-    def get_project(self, project_id: str) -> Project | None:
+    def get_project(self, project_id: str, user_id: str) -> Project | None:
         with session_scope(self.session_factory) as session:
-            record = session.get(ProjectRecord, project_id)
+            record = session.query(ProjectRecord).filter(ProjectRecord.project_id == project_id, ProjectRecord.created_id == user_id).one_or_none()
             if record is None:
                 return None
             return Project(
                 project_id=record.project_id,
+                created_id=record.created_id,
+                update_id=record.update_id,
                 name=record.name,
                 description=record.description,
                 status=ProjectStatus(record.status),
                 workspace_path=record.workspace_path,
                 current_session_id=record.current_session_id,
-                config={},
+                config={
+                    "clientInfo": record.client_info or "",
+                    "province": record.province or "",
+                    "city": record.city or "",
+                    "stage": record.stage or "",
+                    "industry": record.industry or "",
+                },
                 created_at=record.created_at,
                 updated_at=record.updated_at,
             )
 
-    def list_projects(self) -> list[Project]:
+    def list_projects(self, user_id: str) -> list[Project]:
         with session_scope(self.session_factory) as session:
-            records = session.query(ProjectRecord).order_by(ProjectRecord.created_at).all()
+            records = session.query(ProjectRecord).filter(ProjectRecord.created_id == user_id).order_by(ProjectRecord.created_at).all()
             return [
                 Project(
                     project_id=record.project_id,
+                    created_id=record.created_id,
+                    update_id=record.update_id,
                     name=record.name,
                     description=record.description,
                     status=ProjectStatus(record.status),
                     workspace_path=record.workspace_path,
                     current_session_id=record.current_session_id,
-                    config={},
+                    config={
+                        "clientInfo": record.client_info or "",
+                        "province": record.province or "",
+                        "city": record.city or "",
+                        "stage": record.stage or "",
+                        "industry": record.industry or "",
+                    },
                     created_at=record.created_at,
                     updated_at=record.updated_at,
                 )
@@ -80,6 +103,8 @@ class SqlHeaderStore(HeaderStore):
             record.provider_session_ref = project_session.provider_session_ref
             record.status = project_session.status.value
             record.hermes_session_ref = project_session.hermes_session_ref
+            record.created_id = project_session.created_id
+            record.update_id = project_session.update_id
             record.created_at = project_session.created_at
             record.updated_at = project_session.updated_at
             session.add(record)
@@ -110,6 +135,8 @@ class SqlHeaderStore(HeaderStore):
             record.output_path = run.output_path
             record.result_summary_path = run.result_summary_path
             record.detail_path = run.detail_path
+            record.created_id = run.created_id
+            record.update_id = run.update_id
             session.add(record)
 
     def list_runs(self, project_id: str, session_id: str | None = None) -> list[ProjectRun]:
@@ -132,6 +159,8 @@ class SqlHeaderStore(HeaderStore):
             record.session_id = workflow.session_id
             record.status = workflow.status.value
             record.current_phase_id = workflow.current_phase_id.value if workflow.current_phase_id is not None else None
+            record.created_id = workflow.created_id
+            record.update_id = workflow.update_id
             record.created_at = workflow.created_at
             record.started_at = workflow.started_at
             record.ended_at = workflow.ended_at
@@ -149,6 +178,8 @@ class SqlHeaderStore(HeaderStore):
                 workflow_id=record.workflow_id,
                 project_id=record.project_id,
                 session_id=record.session_id,
+                created_id=record.created_id,
+                update_id=record.update_id,
                 status=WorkflowStatus(record.status),
                 current_phase_id=PhaseId(record.current_phase_id) if record.current_phase_id else None,
                 created_at=record.created_at,
@@ -159,10 +190,19 @@ class SqlHeaderStore(HeaderStore):
                 detail_path=record.detail_path,
             )
 
+    def _overview_value(self, project: Project, key: str) -> str | None:
+        value = (project.config or {}).get(key)
+        if value is None:
+            return None
+        text = str(value).strip()
+        return text if text else None
+
     def _session_from_record(self, record: ProjectSessionRecord) -> ProjectSession:
         return ProjectSession(
             session_id=record.session_id,
             project_id=record.project_id,
+            created_id=record.created_id,
+            update_id=record.update_id,
             workspace_path=record.workspace_path,
             conversation=record.conversation,
             base_url=record.base_url,
@@ -179,6 +219,8 @@ class SqlHeaderStore(HeaderStore):
             run_id=record.run_id,
             project_id=record.project_id,
             session_id=record.session_id,
+            created_id=record.created_id,
+            update_id=record.update_id,
             phase_id=PhaseId(record.phase_id),
             phase_name=record.phase_name,
             skill_name=record.skill_name,

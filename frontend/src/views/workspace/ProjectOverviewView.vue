@@ -26,8 +26,13 @@
 
       <section class="overview-page__project">
         <div class="overview-page__project-glow" aria-hidden="true"></div>
-        <h2>{{ project?.name }}</h2>
-        <p>{{ project?.description || '暂无描述' }}</p>
+        <div class="overview-page__project-head">
+          <div>
+            <h2>{{ project?.name }}</h2>
+            <p>{{ project?.description || '暂无描述' }}</p>
+          </div>
+          <button type="button" class="overview-page__edit" @click="editVisible = true">编辑项目信息</button>
+        </div>
         <div class="overview-page__project-grid">
           <div class="overview-page__project-item overview-page__project-item--blue">
             <span>甲方名称</span>
@@ -98,6 +103,19 @@
           {{ workflowLoading ? '工作流启动中...' : '启动完整三阶段工作流' }}
         </button>
       </section>
+
+      <ProjectFormDialog
+        v-model="editVisible"
+        title="编辑项目信息"
+        :initial-name="project?.name ?? ''"
+        :initial-description="project?.description ?? ''"
+        :initial-client-info="clientInfo"
+        :initial-province="String(projectMeta.province ?? '')"
+        :initial-city="String(projectMeta.city ?? '')"
+        :initial-stage="stageText"
+        :initial-industry="industryText"
+        @submit="handleOverviewSubmit"
+      />
     </div>
   </ProjectLayout>
 </template>
@@ -107,6 +125,7 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import ProjectLayout from '@/layouts/ProjectLayout.vue'
+import ProjectFormDialog from '@/components/project/ProjectFormDialog.vue'
 import { useProjectStore } from '@/stores/project'
 import { useRunStore } from '@/stores/run'
 import { useWorkflowStore } from '@/stores/workflow'
@@ -119,6 +138,7 @@ const projectStore = useProjectStore()
 const runStore = useRunStore()
 const workflowStore = useWorkflowStore()
 const workflowLoading = ref(false)
+const editVisible = ref(false)
 
 const project = computed(() => projectStore.current)
 const projectMeta = computed(() => (project.value?.config ?? {}) as ProjectConfig)
@@ -157,6 +177,25 @@ function statusLabel(status: ProjectRun['status']) {
 
 function formatTime(value: string) {
   return new Date(value).toLocaleString('zh-CN', { hour12: false })
+}
+
+const handleOverviewSubmit = async (payload: {
+  name: string
+  description: string | null
+  clientInfo: string
+  province: string
+  city: string
+  stage: string
+  industry: string
+}) => {
+  try {
+    await projectStore.updateProjectOverview(String(route.params.projectId), payload)
+    editVisible.value = false
+    ElMessage.success('项目信息已更新')
+  }
+  catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '更新失败')
+  }
 }
 
 const startWorkflow = async () => {
@@ -243,6 +282,35 @@ const startWorkflow = async () => {
   position: relative;
   margin: 0 0 8px;
   font-size: 20px;
+}
+
+.overview-page__project-head {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.overview-page__project-head p {
+  margin: 0;
+  color: #475569;
+  font-size: 14px;
+  line-height: 1.625;
+}
+
+.overview-page__edit {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #2563eb;
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .overview-page__project p {

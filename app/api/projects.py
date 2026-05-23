@@ -6,6 +6,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel
 
+from app.api.auth import CurrentUserDep
 from app.api.deps import get_project_service, get_run_service, get_session_service, get_workflow_service
 from app.models.project import (
     CreateProjectRequest,
@@ -55,27 +56,41 @@ WorkflowServiceDep = Annotated[WorkflowService, Depends(get_workflow_service)]
 
 
 @router.post("", response_model=Project)
-def create_project(payload: CreateProjectRequest, project_service: ProjectServiceDep) -> Project:
-    return project_service.create_project(payload)
+def create_project(
+    payload: CreateProjectRequest,
+    project_service: ProjectServiceDep,
+    session_service: SessionServiceDep,
+    _current_user: CurrentUserDep,
+) -> Project:
+    project = project_service.create_project(payload, _current_user.user_id)
+    session = session_service.create_session(project)
+    project.current_session_id = session.session_id
+    project_service.save_project(project, user_id=_current_user.user_id)
+    return project
 
 
 @router.get("", response_model=list[Project])
-def list_projects(project_service: ProjectServiceDep) -> list[Project]:
-    return project_service.list_projects()
+def list_projects(project_service: ProjectServiceDep, _current_user: CurrentUserDep) -> list[Project]:
+    return project_service.list_projects_for_user(_current_user.user_id)
 
 
 @router.get("/{project_id}", response_model=Project)
-def get_project(project_id: str, project_service: ProjectServiceDep) -> Project:
+def get_project(project_id: str, project_service: ProjectServiceDep, _current_user: CurrentUserDep) -> Project:
     try:
-        return project_service.get_project(project_id)
+        return project_service.get_project_for_user(project_id, _current_user.user_id)
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Project not found") from None
 
 
 @router.put("/{project_id}", response_model=Project)
-def update_project(project_id: str, payload: UpdateProjectRequest, project_service: ProjectServiceDep) -> Project:
+def update_project(
+    project_id: str,
+    payload: UpdateProjectRequest,
+    project_service: ProjectServiceDep,
+    _current_user: CurrentUserDep,
+) -> Project:
     try:
-        return project_service.update_project(project_id, payload)
+        return project_service.update_project(project_id, payload, _current_user.user_id)
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Project not found") from None
 
@@ -85,9 +100,10 @@ def update_project_overview(
     project_id: str,
     payload: UpdateProjectOverviewRequest,
     project_service: ProjectServiceDep,
+    _current_user: CurrentUserDep,
 ) -> Project:
     try:
-        return project_service.update_project_overview(project_id, payload)
+        return project_service.update_project_overview(project_id, payload, _current_user.user_id)
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Project not found") from None
 
@@ -97,9 +113,10 @@ def update_requirement_analysis(
     project_id: str,
     payload: UpdateRequirementAnalysisRequest,
     project_service: ProjectServiceDep,
+    _current_user: CurrentUserDep,
 ) -> Project:
     try:
-        return project_service.update_requirement_analysis(project_id, payload)
+        return project_service.update_requirement_analysis(project_id, payload, _current_user.user_id)
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Project not found") from None
 
@@ -110,12 +127,25 @@ async def run_phase1(
     payload: RunPhase1Request,
     run_service: RunServiceDep,
     project_service: ProjectServiceDep,
+    session_service: SessionServiceDep,
+    _current_user: CurrentUserDep,
 ) -> RunPhase1Response:
     try:
+        project = project_service.get_project_for_user(project_id, _current_user.user_id)
+        session_id = payload.session_id
+        if not session_id:
+            if project.current_session_id:
+                session_id = project.current_session_id
+            else:
+                session = session_service.create_session(project)
+                project.current_session_id = session.session_id
+                project_service.save_project(project, user_id=_current_user.user_id)
+                session_id = session.session_id
         run = await run_service.create_run(
             project_id,
+            _current_user.user_id,
             CreateRunRequest(
-                session_id=payload.session_id,
+                session_id=session_id,
                 phase_id=PhaseId.PHASE1,
                 phase_name="需求录入与结构化",
                 skill_name="requirement-intake-structuring",
@@ -124,8 +154,8 @@ async def run_phase1(
                 expected_outputs=["需求结构化.md"],
             ),
         )
-        final_run = await run_service.wait_for_run(project_id, run.run_id, run.session_id)
-        project = project_service.sync_requirement_analysis_from_phase1(project_id)
+        final_run = await run_service.wait_for_run(project_id, _current_user.user_id, run.run_id, run.session_id)
+        project = project_service.sync_requirement_analysis_from_phase1(project_id, _current_user.user_id)
         return RunPhase1Response(
             project=project,
             run_id=final_run.run_id,
@@ -146,12 +176,13 @@ def create_session(
     project_id: str,
     project_service: ProjectServiceDep,
     session_service: SessionServiceDep,
+    _current_user: CurrentUserDep,
 ) -> ProjectSession:
     try:
-        project = project_service.get_project(project_id)
+        project = project_service.get_project_for_user(project_id, _current_user.user_id)
         session = session_service.create_session(project)
         project.current_session_id = session.session_id
-        project_service.save_project(project)
+        project_service.save_project(project, user_id=_current_user.user_id)
         return session
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Project not found") from None
@@ -162,9 +193,10 @@ def list_sessions(
     project_id: str,
     project_service: ProjectServiceDep,
     session_service: SessionServiceDep,
+    _current_user: CurrentUserDep,
 ) -> list[ProjectSession]:
     try:
-        project = project_service.get_project(project_id)
+        project = project_service.get_project_for_user(project_id, _current_user.user_id)
         return session_service.list_sessions(project)
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Project not found") from None
@@ -176,9 +208,10 @@ def get_session(
     session_id: str,
     project_service: ProjectServiceDep,
     session_service: SessionServiceDep,
+    _current_user: CurrentUserDep,
 ) -> ProjectSession:
     try:
-        project = project_service.get_project(project_id)
+        project = project_service.get_project_for_user(project_id, _current_user.user_id)
         return session_service.get_session(project, session_id)
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Session not found") from None
@@ -190,9 +223,10 @@ def get_session_info(
     session_id: str,
     project_service: ProjectServiceDep,
     session_service: SessionServiceDep,
+    _current_user: CurrentUserDep,
 ) -> SessionInfoResponse:
     try:
-        project = project_service.get_project(project_id)
+        project = project_service.get_project_for_user(project_id, _current_user.user_id)
         session = session_service.get_session(project, session_id)
         return SessionInfoResponse(
             session_id=session.session_id,
@@ -213,12 +247,13 @@ def resume_session(
     session_id: str,
     project_service: ProjectServiceDep,
     session_service: SessionServiceDep,
+    _current_user: CurrentUserDep,
 ) -> ProjectSession:
     try:
-        project = project_service.get_project(project_id)
+        project = project_service.get_project_for_user(project_id, _current_user.user_id)
         session = session_service.resume_session(project, session_id)
         project.current_session_id = session.session_id
-        project_service.save_project(project)
+        project_service.save_project(project, user_id=_current_user.user_id)
         return session
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Session not found") from None
@@ -230,10 +265,11 @@ async def create_session_run(
     session_id: str,
     payload: CreateRunRequest,
     run_service: RunServiceDep,
+    _current_user: CurrentUserDep,
 ) -> ProjectRun:
     try:
         payload.session_id = session_id
-        return await run_service.create_run(project_id, payload)
+        return await run_service.create_run(project_id, _current_user.user_id, payload)
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Session not found") from None
     except MissingRunInputError as exc:
@@ -241,9 +277,14 @@ async def create_session_run(
 
 
 @router.post("/{project_id}/runs", response_model=ProjectRun)
-async def create_run(project_id: str, payload: CreateRunRequest, run_service: RunServiceDep) -> ProjectRun:
+async def create_run(
+    project_id: str,
+    payload: CreateRunRequest,
+    run_service: RunServiceDep,
+    _current_user: CurrentUserDep,
+) -> ProjectRun:
     try:
-        return await run_service.create_run(project_id, payload)
+        return await run_service.create_run(project_id, _current_user.user_id, payload)
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Project not found") from None
     except MissingRunInputError as exc:
@@ -262,9 +303,14 @@ def list_tools() -> list[ToolInfoResponse]:
 
 
 @router.get("/{project_id}/runs", response_model=list[ProjectRun])
-def list_runs(project_id: str, session_id: str | None = None, run_service: RunServiceDep = Depends(get_run_service)) -> list[ProjectRun]:
+def list_runs(
+    project_id: str,
+    run_service: RunServiceDep,
+    _current_user: CurrentUserDep,
+    session_id: str | None = None,
+) -> list[ProjectRun]:
     try:
-        return run_service.list_runs(project_id, session_id=session_id)
+        return run_service.list_runs(project_id, _current_user.user_id, session_id=session_id)
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Project not found") from None
 
@@ -273,11 +319,12 @@ def list_runs(project_id: str, session_id: str | None = None, run_service: RunSe
 def get_run(
     project_id: str,
     run_id: str,
+    run_service: RunServiceDep,
+    _current_user: CurrentUserDep,
     session_id: str | None = None,
-    run_service: RunServiceDep = Depends(get_run_service),
 ) -> ProjectRun:
     try:
-        return run_service.get_run(project_id, run_id, session_id=session_id)
+        return run_service.get_run(project_id, _current_user.user_id, run_id, session_id=session_id)
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Run not found") from None
 
@@ -288,13 +335,14 @@ def delete_project(
     project_service: ProjectServiceDep,
     run_service: RunServiceDep,
     workflow_service: WorkflowServiceDep,
+    _current_user: CurrentUserDep,
 ) -> Response:
     try:
         if run_service.has_active_runs(project_id):
             raise HTTPException(status_code=409, detail="Project has active runs")
         if workflow_service.has_active_workflows(project_id):
             raise HTTPException(status_code=409, detail="Project has active workflows")
-        project_service.delete_project(project_id)
+        project_service.delete_project(project_id, _current_user.user_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Project not found") from None
@@ -304,10 +352,11 @@ def delete_project(
 def get_logs(
     project_id: str,
     run_id: str,
+    run_service: RunServiceDep,
+    _current_user: CurrentUserDep,
     session_id: str | None = None,
-    run_service: RunServiceDep = Depends(get_run_service),
 ) -> LogsResponse:
     try:
-        return LogsResponse(content=run_service.read_logs(project_id, run_id, session_id=session_id))
+        return LogsResponse(content=run_service.read_logs(project_id, _current_user.user_id, run_id, session_id=session_id))
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Run not found") from None

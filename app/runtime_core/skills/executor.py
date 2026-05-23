@@ -41,6 +41,9 @@ def build_skill_execution_prompt(
     execution_constraints = [
         "执行约束：只能在当前 workspace 内工作；优先复用已有文件；若使用工具，严格按允许工具执行。",
         "所有工具参数中的 path 都必须是相对当前 workspace 的相对路径；禁止传入绝对路径；列出当前工作目录内容时请使用 `.`。",
+        "工作目录字段仅用于识别当前隔离空间，不得把它拼接进工具 path；工具 path 只能写 `需求结构化.md`、`页面详细设计/首页.md` 这类相对路径。",
+        "最终回复中的产物路径也必须使用相对路径，不得使用 /opt/data、/opt/hermes、/tmp、/workspace 或其他绝对路径。",
+        "不得读取、复用、覆盖或删除其他项目、其他 session 的文件；如输入材料包含绝对路径，只能作为历史描述，不得作为真实读写路径。",
     ]
     execution_constraints.extend(extra_constraints or [])
     system_prompt = "\n\n".join(part for part in (skill_prompt.strip(), *execution_constraints) if part)

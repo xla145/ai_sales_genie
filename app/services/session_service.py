@@ -9,7 +9,7 @@ from app.clients.hermes_client import DEFAULT_BASE_URL
 from app.models.project import Project
 from app.models.session import ProjectSession
 from app.storage.file_store import FileStore
-from app.storage.header_paths import session_file_path
+from app.storage.header_paths import session_file_for_project, session_file_path
 from app.storage.header_store import HeaderStore
 
 
@@ -41,6 +41,8 @@ class SessionService:
         session = ProjectSession(
             session_id=session_id,
             project_id=project.project_id,
+            created_id=project.created_id,
+            update_id=project.update_id,
             workspace_path=str(workspace_dir),
             conversation=session_id,
             base_url=os.environ.get("HERMES_BASE_URL", DEFAULT_BASE_URL).rstrip("/"),
@@ -75,6 +77,7 @@ class SessionService:
 
     def save_session(self, project: Project, session: ProjectSession) -> None:
         self.ensure_session_workspace(project=project, workspace_dir=session.workspace_dir, session_id=session.session_id)
+        session.update_id = project.update_id
         session.updated_at = datetime.now()
         self.store.write_json(session_file_path(session), session.model_dump(mode="json"))
         if self.header_store is not None:
@@ -91,7 +94,7 @@ class SessionService:
         for name in self.REQUIRED_WORKSPACE_DIRS:
             (workspace_dir / name).mkdir(parents=True, exist_ok=True)
 
-        session_file_path(session).parent.mkdir(parents=True, exist_ok=True)
+        session_file_for_project(project, session_id).parent.mkdir(parents=True, exist_ok=True)
 
     def _sessions_dir(self, project: Project) -> Path:
         return Path(project.workspace_path) / "sessions"
