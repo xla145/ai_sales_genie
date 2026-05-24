@@ -1,7 +1,7 @@
 import { useMock } from '@/config/env'
 import { mockApi } from '@/mock/client'
 import http from '@/services/http'
-import type { CreateProjectRequest, Project, RunPhase1Request, RunPhase1Response, UpdateProjectOverviewRequest, UpdateProjectRequest, UpdateRequirementAnalysisRequest } from '@/types/api'
+import type { CreateProjectRequest, Project, RequirementAttachmentItem, RunPhase1Request, RunPhase1Response, UpdateProjectOverviewRequest, UpdateProjectRequest, UpdateRequirementAnalysisRequest } from '@/types/api'
 
 export const projectService = {
   list() {
@@ -27,6 +27,20 @@ export const projectService = {
   updateRequirementAnalysis(projectId: string, payload: UpdateRequirementAnalysisRequest) {
     if (useMock) return mockApi.updateRequirementAnalysis(projectId, payload)
     return http.patch<Project>(`/projects/${projectId}/requirement-analysis`, payload)
+  },
+  listRequirementUploads(projectId: string) {
+    if (useMock) return mockApi.listRequirementUploads(projectId)
+    return http.get<RequirementAttachmentItem[]>(`/projects/${projectId}/requirement-uploads`)
+  },
+  uploadRequirementFile(projectId: string, file: File) {
+    if (useMock) return mockApi.uploadRequirementFile(projectId, file)
+    const formData = new FormData()
+    formData.append('file', file)
+    return http.post<RequirementAttachmentItem>(`/projects/${projectId}/requirement-uploads`, formData)
+  },
+  deleteRequirementUpload(projectId: string, uploadId: string) {
+    if (useMock) return mockApi.deleteRequirementUpload(projectId, uploadId)
+    return http.delete(`/projects/${projectId}/requirement-uploads/${uploadId}`)
   },
   runPhase1(projectId: string, payload: RunPhase1Request) {
     if (useMock) return mockApi.runPhase1(projectId, payload)

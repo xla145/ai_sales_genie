@@ -54,8 +54,13 @@ export interface RequirementPending {
 }
 
 export interface RequirementAttachmentItem {
+  id?: string | null
   name: string
   meta: string
+  size?: number | null
+  content_type?: string | null
+  storage_path?: string | null
+  uploaded_at?: string | null
 }
 
 export interface RequirementSupplement {

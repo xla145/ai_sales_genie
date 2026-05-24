@@ -6,6 +6,7 @@ import type {
   Project,
   RunPhase1Request,
   RunPhase1Response,
+  RequirementAttachmentItem,
   UpdateProjectOverviewRequest,
   UpdateProjectRequest,
   UpdateRequirementAnalysisRequest,
@@ -142,6 +143,53 @@ export const mockApi = {
         },
       }),
     )
+  },
+
+  async listRequirementUploads(projectId: string) {
+    const project = mockState.getProject(projectId)
+    return wrap(normalizeRequirementAnalysis(project.config).attachments)
+  },
+
+  async uploadRequirementFile(projectId: string, file: File) {
+    const project = mockState.getProject(projectId)
+    const current = normalizeRequirementAnalysis(project.config)
+    const uploadedAt = new Date().toISOString()
+    const attachment: RequirementAttachmentItem = {
+      id: nextId('upload'),
+      name: file.name,
+      meta: `${file.size} B · ${new Date(uploadedAt).toLocaleString('zh-CN', { hour12: false })}`,
+      size: file.size,
+      content_type: file.type || null,
+      storage_path: `requirements/uploads/${file.name}`,
+      uploaded_at: uploadedAt,
+    }
+    mockState.saveProject({
+      ...project,
+      config: {
+        ...project.config,
+        requirementAnalysis: {
+          ...current,
+          attachments: [attachment, ...current.attachments],
+        },
+      },
+    })
+    return wrap(attachment)
+  },
+
+  async deleteRequirementUpload(projectId: string, uploadId: string) {
+    const project = mockState.getProject(projectId)
+    const current = normalizeRequirementAnalysis(project.config)
+    mockState.saveProject({
+      ...project,
+      config: {
+        ...project.config,
+        requirementAnalysis: {
+          ...current,
+          attachments: current.attachments.filter((item) => item.id !== uploadId),
+        },
+      },
+    })
+    await delay(300)
   },
 
   async runPhase1(projectId: string, payload: RunPhase1Request) {

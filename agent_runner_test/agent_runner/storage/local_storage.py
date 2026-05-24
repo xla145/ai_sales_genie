@@ -12,19 +12,33 @@ class LocalStorage:
         project_root = self.base_path / "projects" / project_id
         deliverables = project_root / "deliverables"
         current = deliverables / "current"
+        legacy_current = project_root / "current"
         prototypes = deliverables / "prototypes"
         runs = project_root / "runs"
         current.mkdir(parents=True, exist_ok=True)
         prototypes.mkdir(parents=True, exist_ok=True)
         runs.mkdir(parents=True, exist_ok=True)
+        self.ensure_current_workspace(current, legacy_current)
         return {
             "project_root": str(project_root),
             "deliverables": str(deliverables),
             "current": str(current),
+            "legacy_current": str(legacy_current),
             "prototypes": str(prototypes),
             "runs": str(runs),
             "version_file": str(deliverables / "current_version.json"),
         }
+
+    def ensure_current_workspace(self, current: Path, legacy_current: Path) -> None:
+        if any(current.iterdir()) or not legacy_current.is_dir():
+            return
+        for item in legacy_current.iterdir():
+            target = current / item.name
+            if item.is_dir():
+                shutil.copytree(item, target, dirs_exist_ok=True)
+            elif item.is_file():
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(item, target)
 
     def read_current_version(self, project_id: str) -> dict:
         paths = self.build_project_paths(project_id)
@@ -56,10 +70,12 @@ class LocalStorage:
         prototypes_dir = Path(paths["prototypes"])
         target_dir = prototypes_dir / version_name
 
+        copied_from_previous_version = False
         if isinstance(base_version, str) and base_version:
             base_dir = prototypes_dir / base_version
             if base_dir.is_dir() and not target_dir.exists():
                 shutil.copytree(base_dir, target_dir)
+                copied_from_previous_version = True
             else:
                 target_dir.mkdir(parents=True, exist_ok=True)
         else:
@@ -72,6 +88,7 @@ class LocalStorage:
             "run_id": run_id,
             "user_instruction": user_instruction,
             "storage_path": str(target_dir),
+            "copied_from_previous_version": copied_from_previous_version,
             "status": "pending",
         }
         versions.append(entry)

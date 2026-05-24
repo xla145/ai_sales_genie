@@ -24,9 +24,12 @@ PHASES = [
         "run_type": "phase2_design",
         "user_message": "进入阶段二：功能与页面设计",
         "instruction": (
-            "进入阶段二：系统全局功能描述与设计与功能点设计。基于当前 workspace 中的需求结构化产物，"
-            "只输出最终产物 `系统全局功能描述与设计.md` 和 `系统的功能点设计.md`；"
-            "不要输出页面详细设计、第二阶段设计检查报告或其他中间产物。"
+            "进入阶段二：系统功能设计与页面规划。基于当前 workspace 中的需求结构化产物，"
+            "完整输出第二阶段最终产物：`系统全局功能描述与设计.md`、`系统的功能点设计.md`、"
+            "`系统的功能点设计.json`、`页面详细设计/页面名称.md`、`第二阶段设计检查报告.md`。"
+            "`系统的功能点设计.json` 用于后续表格展示，必须包含功能点列表数组，"
+            "每项至少包含模块、名称、说明、优先级、状态等可展示字段。"
+            "所有 files[].path 必须使用这些项目相对路径，不得改名为英文别名。"
         ),
     },
     {
@@ -35,8 +38,10 @@ PHASES = [
         "run_type": "phase3_prototype",
         "user_message": "进入阶段三：原型生成",
         "instruction": (
-            "进入阶段三：原型生成。基于当前 workspace 中的系统全局功能描述与设计与功能点设计最终产物，"
-            "只输出 `prototype/` 多页面静态原型文件；不要输出 generation-report、validation-report 或其他中间产物。"
+            "进入阶段三：原型生成。基于当前 workspace 中的完整第二阶段产物："
+            "`系统全局功能描述与设计.md`、`系统的功能点设计.md`、`页面详细设计/`、"
+            "`第二阶段设计检查报告.md`，生成完整 `prototype/` 多页面静态原型文件。"
+            "如需要自检报告，可同时输出 `generation-report.md` 和 `validation-report.md`。"
         ),
     },
 ]
@@ -249,7 +254,8 @@ def main():
                 "user_message": args.modify_prototype,
                 "instruction": (
                     "修改当前原型并生成一个新的完整原型版本。"
-                    "只返回需要变更的 `prototype/` 文件；不要返回中间文档。\n\n"
+                    "runner 会先复制当前原型版本到新版本目录，再应用你返回的 `prototype/` 变更文件；"
+                    "只返回需要变更的 `prototype/` 文件，不要覆盖旧版本。\n\n"
                     f"修改要求：{args.modify_prototype}"
                 ),
             }

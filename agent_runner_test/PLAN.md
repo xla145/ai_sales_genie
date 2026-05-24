@@ -113,7 +113,7 @@
   - `phase3` instruction 改为基于完整第二阶段产物生成完整 `prototype/`，并可按需要输出 `generation-report.md`、`validation-report.md`。
 - **Sketch**:
   - phase2 prompt 明确：最终 JSON 的 files[].path 必须使用上述项目相对路径。
-- [ ] pending
+- [x] completed
 
 ### Step 2: 让 runner prompt 支持第二阶段完整产物
 - **File**: `agent_runner_test/agent_runner/worker/runner.py`
@@ -126,7 +126,7 @@
   - `artifact_policy = self._build_artifact_policy(run_type, prompt)`
   - phase2 policy: allow all design outputs.
   - prototype policy: return prototype paths only; runner versions them.
-- [ ] pending
+- [x] completed
 
 ### Step 3: 调整文件允许规则，保留第二阶段路径
 - **File**: `agent_runner_test/agent_runner/worker/runner.py`
@@ -145,7 +145,7 @@
   - `ALLOWED_WORKSPACE_PREFIXES = ("页面详细设计/",)`
   - `ALLOWED_WORKSPACE_FILES = {...}`
   - `_target_for_output_path()` 默认使用原始 relative path，仅对 prototype 做版本目录映射。
-- [ ] pending
+- [x] completed
 
 ### Step 4: 统一项目工作空间 current 路径兼容
 - **File**: `agent_runner_test/agent_runner/storage/local_storage.py`, `agent_runner_test/agent_runner/worker/runner.py`
@@ -155,7 +155,7 @@
   - 避免阶段二因第一阶段旧产物在旧目录而失败。
 - **Sketch**:
   - `ensure_current_workspace(project_id)` copies legacy files only when new workspace has no files.
-- [ ] pending
+- [x] completed
 
 ### Step 5: 收紧原型版本触发规则
 - **File**: `agent_runner_test/agent_runner/worker/runner.py`, possibly `agent_runner_test/agent_runner/api/runs.py`
@@ -167,7 +167,7 @@
 - **Sketch**:
   - pass `run_type` into `runner.run_once(...)` from `execute_run()`.
   - `is_prototype_run = run_type in {"phase3_prototype", "prototype_edit"}`.
-- [ ] pending
+- [x] completed
 
 ### Step 6: manifest 记录完整映射与版本信息
 - **File**: `agent_runner_test/agent_runner/worker/runner.py`
@@ -182,31 +182,38 @@
   - 用于后续定位“项目空间保留哪一份，v2/v3 修改结果在哪里”。
 - **Sketch**:
   - `manifest["written_files"]` 继续保留 `path` 与 `storage_path`。
-- [ ] pending
+- [x] completed
 
-### Step 7: 可选地把 materialized 文件登记为 artifacts
+### Step 7: 把 materialized 文件登记为 artifacts
 - **File**: `agent_runner_test/agent_runner/worker/runner.py`, `agent_runner_test/agent_runner/services/artifact_service.py`
 - **Change**:
   - 除 `hermes_output.md`、`patch.diff`、`manifest.json` 外，把每个写入的产物文件也保存 artifact 记录。
   - artifact metadata 记录 `project_relative_path`、`prototype_version`。
   - 这样后续页面可以直接通过 artifacts 列表展示 PRD、功能点列表、页面设计文件、原型文件。
-- **Trade-off**:
-  - artifact 数量会变多，但更利于前端展示和调试。
-- [ ] pending
+- [x] completed
 
-### Step 8: 验证场景
+### Step 8: 为功能点列表生成结构化 JSON
+- **File**: `agent_runner_test/run_prototype_flow.py`, `agent_runner_test/agent_runner/worker/runner.py`
+- **Change**:
+  - phase2 指令在保留 `系统的功能点设计.md` 的同时，额外要求输出 `系统的功能点设计.json`。
+  - JSON 用于后续表格展示，至少包含功能点列表数组与每项的名称、模块、说明、优先级/状态等可展示字段。
+  - runner 的 allowed paths 增加 `系统的功能点设计.json`，并作为 materialized artifact 登记。
+  - PRD 展示仍读取 `系统全局功能描述与设计.md`，不新增 `PRD.md` 要求。
+- [x] completed
+
+### Step 9: 验证场景
 - **Commands**:
-  - 运行阶段二：确认 `deliverables/current/系统全局功能描述与设计.md`、`deliverables/current/系统的功能点设计.md`、`deliverables/current/页面详细设计/*.md`、`deliverables/current/第二阶段设计检查报告.md` 存在。
+  - 运行阶段二：确认 `deliverables/current/系统全局功能描述与设计.md`、`deliverables/current/系统的功能点设计.md`、`deliverables/current/系统的功能点设计.json`、`deliverables/current/页面详细设计/*.md`、`deliverables/current/第二阶段设计检查报告.md` 存在。
   - 运行阶段三：确认 `deliverables/prototypes/v1/prototype/...` 或版本目录中的原型文件存在，且 `current_version.json` 指向 `v1`。
   - 运行一次 `--modify-prototype`：确认 `v2` 从 `v1` 复制而来，变更文件写入 `v2`，`v1` 保留。
   - 再运行一次 `--modify-prototype`：确认生成 `v3`，`v2` 保留。
-- [ ] pending
+- [x] completed
 
 ### Files to modify
 | File | Change | Why |
 |------|--------|-----|
 | `agent_runner_test/run_prototype_flow.py` | 调整阶段二/三与原型修改指令 | 让 Hermes 返回完整阶段产物 |
-| `agent_runner_test/agent_runner/worker/runner.py` | 阶段感知 prompt、允许路径、版本触发、manifest | 实现产物保留与版本化核心逻辑 |
+| `agent_runner_test/agent_runner/worker/runner.py` | 阶段感知 prompt、允许路径、功能点 JSON、版本触发、manifest | 实现产物保留与版本化核心逻辑 |
 | `agent_runner_test/agent_runner/storage/local_storage.py` | current 路径兼容、版本复制元数据 | 避免旧 workspace 断裂，增强版本记录 |
 | `agent_runner_test/agent_runner/api/runs.py` | 将 run_type 传给 runner | 避免靠 prompt/run_id 猜测阶段 |
 | `agent_runner_test/agent_runner/services/artifact_service.py` | 如需批量登记产物 artifact | 支撑后续页面展示产物列表 |
@@ -216,7 +223,7 @@
 - 不引入新的队列、鉴权或外部存储。
 - 不把旧版本原型覆盖为最新版本。
 
-### Open Questions
-1. “PRD”页面展示的数据源是否要使用 `系统全局功能描述与设计.md`，还是需要 Hermes 在第二阶段额外生成标准 `PRD.md`？
-2. 后续页面展示“功能点列表”时，是否直接读取 `系统的功能点设计.md`，还是需要 runner 额外解析为结构化 JSON？
-3. 原型版本目录期望是 `deliverables/prototypes/v2/prototype/...`，还是 `deliverables/prototypes/v2/...` 直接放 HTML/CSS？当前实现是后者，因为 `prototype/` 前缀会映射到版本目录根。建议保持当前实现，返回路径仍显示为 `prototype/...`。
+### Decisions from annotations
+1. PRD 页面展示数据源使用 `系统全局功能描述与设计.md`，不要求 Hermes 额外生成标准 `PRD.md`。
+2. 功能点列表需要结构化 JSON，因为后续要用于表格展示；不能只依赖 `系统的功能点设计.md` 文本读取。
+3. 原型版本目录沿用当前映射：返回路径仍显示为 `prototype/...`，实际存储在 `deliverables/prototypes/vN/...`，不额外嵌套 `prototype/` 目录。

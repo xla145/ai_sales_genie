@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { projectService } from '@/services/modules/project.service'
-import type { CreateProjectRequest, Project, RunPhase1Request, RunPhase1Response, UpdateProjectOverviewRequest, UpdateProjectRequest, UpdateRequirementAnalysisRequest } from '@/types/api'
+import type { CreateProjectRequest, Project, RequirementAttachmentItem, RunPhase1Request, RunPhase1Response, UpdateProjectOverviewRequest, UpdateProjectRequest, UpdateRequirementAnalysisRequest } from '@/types/api'
 
 interface ProjectState {
   items: Project[]
@@ -59,6 +59,40 @@ export const useProjectStore = defineStore('project', {
       this.items = next.items
       this.current = next.current
       return data
+    },
+    async listRequirementUploads(projectId: string) {
+      const { data } = await projectService.listRequirementUploads(projectId)
+      return data
+    },
+    async uploadRequirementFile(projectId: string, file: File) {
+      const { data } = await projectService.uploadRequirementFile(projectId, file)
+      this.mergeRequirementAttachments(projectId, [data])
+      return data
+    },
+    async deleteRequirementUpload(projectId: string, uploadId: string) {
+      await projectService.deleteRequirementUpload(projectId, uploadId)
+      this.mergeRequirementAttachments(projectId, undefined, uploadId)
+    },
+    mergeRequirementAttachments(projectId: string, added?: RequirementAttachmentItem[], removedId?: string) {
+      const apply = (project: Project) => {
+        const currentAnalysis = project.config.requirementAnalysis
+        if (!currentAnalysis) return project
+        const filtered = currentAnalysis.attachments.filter((item) => !removedId || item.id !== removedId)
+        return {
+          ...project,
+          config: {
+            ...project.config,
+            requirementAnalysis: {
+              ...currentAnalysis,
+              attachments: [...(added ?? []), ...filtered],
+            },
+          },
+        }
+      }
+      this.items = this.items.map((item) => (item.project_id === projectId ? apply(item) : item))
+      if (this.current?.project_id === projectId) {
+        this.current = apply(this.current)
+      }
     },
     async runPhase1(projectId: string, payload: RunPhase1Request) {
       const { data } = await projectService.runPhase1(projectId, payload)

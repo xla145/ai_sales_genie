@@ -31,8 +31,13 @@ const clonePendingItem = (item: RequirementPendingItem): RequirementPendingItem 
 })
 
 const cloneAttachment = (item: RequirementAttachmentItem): RequirementAttachmentItem => ({
+  id: item.id ?? null,
   name: item.name ?? '',
   meta: item.meta ?? '',
+  size: item.size ?? null,
+  content_type: item.content_type ?? null,
+  storage_path: item.storage_path ?? null,
+  uploaded_at: item.uploaded_at ?? null,
 })
 
 export const buildRequirementKey = (prefix: 'scenario' | 'risk', index?: number) => {

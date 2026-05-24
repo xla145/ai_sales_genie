@@ -68,7 +68,14 @@ async def execute_run(run_id: str, payload: ExecuteRunRequest, db: AsyncSession 
         raise HTTPException(status_code=404, detail="run not found")
     if run["project_id"] != payload.project_id:
         raise HTTPException(status_code=400, detail="project_id mismatch")
-    result = await runner.run_once(db, run_id, payload.project_id, payload.prompt, session_id=run.get("session_id"))
+    result = await runner.run_once(
+        db,
+        run_id,
+        payload.project_id,
+        payload.prompt,
+        session_id=run.get("session_id"),
+        run_type=run.get("run_type"),
+    )
     patch_path = result.get("patch_path")
     if isinstance(patch_path, str) and patch_path:
         result["patch_download_url"] = f"/runs/{run_id}/patch"

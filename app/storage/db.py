@@ -77,6 +77,17 @@ def ensure_audit_user_columns(engine: Engine) -> None:
                     else:
                         connection.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {column_name} VARCHAR(32) NULL"))
 
+        if "project_attachments" in table_names:
+            columns = {column["name"] for column in inspector.get_columns("project_attachments")}
+            attachment_columns = {
+                "size": "INTEGER",
+                "content_type": "VARCHAR(255)",
+                "uploaded_at": "DATETIME",
+            }
+            for column_name, column_type in attachment_columns.items():
+                if column_name not in columns:
+                    connection.execute(text(f"ALTER TABLE project_attachments ADD COLUMN {column_name} {column_type} NULL"))
+
 
 def build_session_factory(engine: Engine) -> sessionmaker[Session]:
     return sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)

@@ -106,7 +106,10 @@ class RequirementAnalysisRepository:
                         "id": str(row.id),
                         "name": row.name,
                         "meta": row.meta,
+                        "size": row.size,
+                        "content_type": row.content_type,
                         "storage_path": row.storage_path,
+                        "uploaded_at": row.uploaded_at.isoformat() if row.uploaded_at else None,
                     }
                     for row in attachments
                 ],
@@ -229,7 +232,10 @@ class RequirementAnalysisRepository:
                         update_id=user_id,
                         name=str(item.get("name") or ""),
                         meta=str(item.get("meta") or ""),
+                        size=item.get("size"),
+                        content_type=str(item.get("content_type") or "") or None,
                         storage_path=str(item.get("storage_path") or "") or None,
+                        uploaded_at=datetime.fromisoformat(str(item.get("uploaded_at"))) if item.get("uploaded_at") else None,
                     )
                 )
 

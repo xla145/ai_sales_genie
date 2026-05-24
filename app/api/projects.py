@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
 from pydantic import BaseModel
 
 from app.api.auth import CurrentUserDep
@@ -11,6 +11,7 @@ from app.api.deps import get_project_service, get_run_service, get_session_servi
 from app.models.project import (
     CreateProjectRequest,
     Project,
+    RequirementAttachmentItem,
     RunPhase1Request,
     RunPhase1Response,
     UpdateProjectOverviewRequest,
@@ -119,6 +120,56 @@ def update_requirement_analysis(
         return project_service.update_requirement_analysis(project_id, payload, _current_user.user_id)
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Project not found") from None
+
+
+@router.get("/{project_id}/requirement-uploads", response_model=list[RequirementAttachmentItem])
+def list_requirement_uploads(
+    project_id: str,
+    project_service: ProjectServiceDep,
+    _current_user: CurrentUserDep,
+) -> list[dict]:
+    try:
+        return project_service.list_requirement_uploads(project_id, _current_user.user_id)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Project not found") from None
+
+
+@router.post("/{project_id}/requirement-uploads", response_model=RequirementAttachmentItem)
+async def upload_requirement_file(
+    project_id: str,
+    project_service: ProjectServiceDep,
+    _current_user: CurrentUserDep,
+    file: UploadFile = File(...),
+) -> dict:
+    try:
+        return project_service.upload_requirement_file(
+            project_id,
+            _current_user.user_id,
+            filename=file.filename or "upload",
+            content_type=file.content_type,
+            file_obj=file.file,
+        )
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Project not found") from None
+    except ValueError as exc:
+        code = status.HTTP_413_REQUEST_ENTITY_TOO_LARGE if "too large" in str(exc).lower() else status.HTTP_400_BAD_REQUEST
+        raise HTTPException(status_code=code, detail=str(exc)) from exc
+    finally:
+        await file.close()
+
+
+@router.delete("/{project_id}/requirement-uploads/{upload_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_requirement_upload(
+    project_id: str,
+    upload_id: str,
+    project_service: ProjectServiceDep,
+    _current_user: CurrentUserDep,
+) -> Response:
+    try:
+        project_service.delete_requirement_upload(project_id, _current_user.user_id, upload_id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Upload not found") from None
 
 
 @router.post("/{project_id}/phase1/run", response_model=RunPhase1Response)

@@ -151,7 +151,10 @@ class ProjectAttachmentRecord(Base):
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False, default="")
     meta: Mapped[str] = mapped_column(Text(), nullable=False, default="")
+    size: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    content_type: Mapped[str | None] = mapped_column(String(255), nullable=True)
     storage_path: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    uploaded_at: Mapped[datetime | None] = mapped_column(DateTime(), nullable=True)
     created_id: Mapped[str | None] = mapped_column(ForeignKey("users.user_id", ondelete="RESTRICT"), nullable=True, index=True)
     update_id: Mapped[str | None] = mapped_column(ForeignKey("users.user_id", ondelete="RESTRICT"), nullable=True, index=True)
 

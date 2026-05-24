@@ -31,7 +31,6 @@
             <h2>{{ project?.name }}</h2>
             <p>{{ project?.description || '暂无描述' }}</p>
           </div>
-          <button type="button" class="overview-page__edit" @click="editVisible = true">编辑项目信息</button>
         </div>
         <div class="overview-page__project-grid">
           <div class="overview-page__project-item overview-page__project-item--blue">
@@ -97,25 +96,6 @@
         </div>
         <p v-else class="overview-page__activity-empty">暂无运行记录，可在需求录入后触发 AI 分析</p>
       </section>
-
-      <section class="overview-page__actions">
-        <button class="overview-page__workflow" type="button" :disabled="workflowLoading" @click="startWorkflow">
-          {{ workflowLoading ? '工作流启动中...' : '启动完整三阶段工作流' }}
-        </button>
-      </section>
-
-      <ProjectFormDialog
-        v-model="editVisible"
-        title="编辑项目信息"
-        :initial-name="project?.name ?? ''"
-        :initial-description="project?.description ?? ''"
-        :initial-client-info="clientInfo"
-        :initial-province="String(projectMeta.province ?? '')"
-        :initial-city="String(projectMeta.city ?? '')"
-        :initial-stage="stageText"
-        :initial-industry="industryText"
-        @submit="handleOverviewSubmit"
-      />
     </div>
   </ProjectLayout>
 </template>

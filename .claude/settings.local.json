@@ -89,7 +89,17 @@
       "Bash(pytest *)",
       "Bash(python3.11 --version)",
       "Bash(python3.12 --version)",
-      "Bash(需求结构化.md)"
+      "Bash(需求结构化.md)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__query-docs",
+      "Bash(PYTHONPATH=/Users/mac/xula/ai_sales_genie/langgraph_prototype_project/src /Users/mac/xula/ai_sales_genie/.venv/bin/python *)",
+      "Bash(/Users/mac/xula/ai_sales_genie/.venv/bin/langgraph-prototype 销售助手系统，页面：首页、线索列表、跟进记录 *)",
+      "Bash(/Users/mac/xula/ai_sales_genie/.venv/bin/langgraph-prototype 销售助手系统，页面：首页、线索列表 *)",
+      "Bash(OPENAI_TIMEOUT=600 /Users/mac/xula/ai_sales_genie/.venv/bin/python *)",
+      "Bash(/Users/mac/xula/ai_sales_genie/.venv/bin/langgraph-prototype *)",
+      "Bash(OPENAI_TIMEOUT=900 /Users/mac/xula/ai_sales_genie/.venv/bin/python *)",
+      "Bash(OPENAI_TIMEOUT=900 /Users/mac/xula/ai_sales_genie/.venv/bin/langgraph-prototype *)",
+      "Bash(gh repo *)"
     ]
   }
 }

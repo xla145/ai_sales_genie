@@ -14,13 +14,26 @@ from agent_runner.services.run_service import RunService
 from agent_runner.storage.local_storage import LocalStorage
 
 
-FINAL_DOCUMENT_PATHS = {
-    "需求结构化.md": "requirements.md",
-    "PRD.md": "prd.md",
-    "prd.md": "prd.md",
-    "系统的功能点设计.md": "feature-points.md",
-    "feature-points.md": "feature-points.md",
+LEGACY_DOCUMENT_PATHS = {
+    "requirements.md": "需求结构化.md",
+    "prd.md": "PRD.md",
+    "feature-points.md": "系统的功能点设计.md",
 }
+
+ALLOWED_WORKSPACE_FILES = {
+    "需求结构化.md",
+    "PRD.md",
+    "系统全局功能描述与设计.md",
+    "系统的功能点设计.md",
+    "系统的功能点设计.json",
+    "第二阶段设计检查报告.md",
+    "generation-report.md",
+    "validation-report.md",
+}
+
+ALLOWED_WORKSPACE_PREFIXES = (
+    "页面详细设计/",
+)
 
 
 class Runner:
@@ -41,17 +54,14 @@ class Runner:
         workspace_path: str,
         workspace_context: str,
         prototype_version: dict | None,
+        run_type: str | None,
     ) -> str:
-        prototype_rule = ""
-        if prototype_version is not None:
-            prototype_rule = (
-                f"本次原型输出版本: {prototype_version['version']}，已基于上一版本复制出完整目录。\n"
-                "如果修改原型，返回路径必须以 `prototype/` 开头，runner 会映射到该版本目录；可以只返回变更文件。\n"
-            )
+        artifact_rule = self._build_artifact_rule(run_type, prototype_version)
         return (
             f"当前 project_id: {project_id}\n"
             f"当前 session_id: {session_id or '无'}\n"
             f"当前 run_id: {run_id}\n"
+            f"当前 run_type: {run_type or 'unknown'}\n"
             f"当前项目 workspace: {workspace_path}\n"
             "该 workspace 由宿主系统按项目隔离创建，只能作为当前项目的用户空间使用。\n"
             "不得读取、复用、覆盖或删除其他项目、其他 run/session 的文件。\n"
@@ -62,11 +72,53 @@ class Runner:
             "JSON 格式必须是：{\"files\":[{\"path\":\"相对路径\",\"content\":\"完整文件内容\"}],\"deleted_files\":[\"相对路径\"]}。\n"
             "files[].content 必须包含完整文件内容；不得只描述文件已生成，也不得只给产物清单。\n"
             "如果没有文件变更，也返回：{\"files\":[],\"deleted_files\":[]}。\n"
-            "系统只保存最终产物：需求结构化、PRD、功能点、原型；不要返回页面详细设计、检查报告、临时分析等中间产物。\n"
-            f"{prototype_rule}\n"
+            f"{artifact_rule}\n"
             f"当前 workspace 已有文件内容：\n{workspace_context}\n\n"
             f"用户任务：{prompt}"
         )
+
+    def _guess_mime_type(self, relative_path: str) -> str:
+        suffix = Path(relative_path).suffix.lower()
+        if suffix == ".md":
+            return "text/markdown"
+        if suffix == ".html":
+            return "text/html"
+        if suffix == ".css":
+            return "text/css"
+        if suffix == ".js":
+            return "application/javascript"
+        if suffix == ".json":
+            return "application/json"
+        return "text/plain"
+
+    def _build_artifact_rule(self, run_type: str | None, prototype_version: dict | None) -> str:
+        if run_type == "phase2_design":
+            return (
+                "本次是第二阶段设计产物生成。必须保留所有第二阶段文件，files[].path 使用项目相对路径原名："
+                "`系统全局功能描述与设计.md`、`系统的功能点设计.md`、`系统的功能点设计.json`、"
+                "`页面详细设计/页面名称.md`、`第二阶段设计检查报告.md`；不得改名为英文别名。"
+                "`系统的功能点设计.json` 用于后续表格展示，必须包含功能点列表数组，"
+                "每项至少包含模块、名称、说明、优先级、状态等可展示字段。"
+            )
+        if run_type == "phase3_prototype":
+            version_text = f"本次原型输出版本: {prototype_version['version']}。" if prototype_version else ""
+            return (
+                f"本次是第三阶段原型生成。{version_text}"
+                "返回路径必须以 `prototype/` 开头，runner 会写入当前原型版本目录。"
+                "如生成 `generation-report.md`、`validation-report.md`，按项目相对路径返回。"
+            )
+        if run_type == "prototype_edit":
+            version_text = ""
+            if prototype_version is not None:
+                version_text = (
+                    f"本次原型输出版本: {prototype_version['version']}，"
+                    f"已基于上一版本 {prototype_version.get('base_version') or '无'} 复制出完整目录。"
+                )
+            return (
+                f"本次是原型修改。{version_text}"
+                "返回路径必须以 `prototype/` 开头；可以只返回变更文件，runner 会保留上一版本并生成新版本。"
+            )
+        return "系统保存项目最终产物；返回文件必须使用项目相对路径，不能使用绝对路径。"
 
     def _build_workspace_context(self, workspace_dir: Path, prototype_dir: Path | None = None) -> str:
         sections: list[str] = []
@@ -124,12 +176,14 @@ class Runner:
         return None
 
     def _is_final_document_path(self, relative_path: str) -> bool:
-        if relative_path in FINAL_DOCUMENT_PATHS:
+        if relative_path in ALLOWED_WORKSPACE_FILES or relative_path in LEGACY_DOCUMENT_PATHS:
             return True
-        return relative_path.startswith("prototype/")
+        if relative_path.startswith("prototype/"):
+            return True
+        return any(relative_path.startswith(prefix) for prefix in ALLOWED_WORKSPACE_PREFIXES)
 
     def _target_for_output_path(self, workspace_root: Path, relative_path: str, prototype_dir: Path | None) -> tuple[Path, str]:
-        mapped_path = FINAL_DOCUMENT_PATHS.get(relative_path, relative_path)
+        mapped_path = LEGACY_DOCUMENT_PATHS.get(relative_path, relative_path)
         if mapped_path.startswith("prototype/"):
             if prototype_dir is None:
                 raise ValueError(f"prototype output is not allowed for this run: {relative_path}")
@@ -221,6 +275,7 @@ class Runner:
         prompt: str,
         *,
         session_id: str | None = None,
+        run_type: str | None = None,
     ) -> dict:
         await self.run_service.update_run_status(
             db,
@@ -243,7 +298,7 @@ class Runner:
         try:
             paths = self.storage.build_project_paths(project_id)
             workspace_dir = Path(paths["current"])
-            is_prototype_run = "prototype" in run_id or "原型" in prompt or "prototype" in prompt.lower()
+            is_prototype_run = run_type in {"phase3_prototype", "prototype_edit"}
             prototype_version = None
             prototype_dir = None
             if is_prototype_run:
@@ -261,6 +316,7 @@ class Runner:
                 workspace_path=paths["current"],
                 workspace_context=self._build_workspace_context(workspace_dir, prototype_dir=prototype_dir),
                 prototype_version=prototype_version,
+                run_type=run_type,
             )
             result = await self.hermes_service.plan(workspace_prompt)
             patch_text = result.get("patch") or ""
@@ -281,13 +337,20 @@ class Runner:
             patch_path.write_text(patch_text, encoding="utf-8")
 
             manifest_file = run_dir / "manifest.json"
+            project_relative_files = [item["path"] for item in written_files]
             manifest_file.write_text(
                 json.dumps(
                     {
                         "project_id": project_id,
                         "run_id": run_id,
+                        "run_type": run_type,
                         "workspace_path": str(workspace_dir),
+                        "legacy_workspace_path": paths.get("legacy_current"),
+                        "project_relative_files": project_relative_files,
                         "prototype_version": prototype_version,
+                        "base_version": prototype_version.get("base_version") if prototype_version else None,
+                        "version_storage_path": prototype_version.get("storage_path") if prototype_version else None,
+                        "copied_from_previous_version": prototype_version.get("copied_from_previous_version") if prototype_version else False,
                         "written_files": written_files,
                         "deleted_files": deleted_files,
                         "json_payload_found": bool(written_files or deleted_files or self._extract_json_payload(patch_text) is not None),
@@ -297,6 +360,28 @@ class Runner:
                 ),
                 encoding="utf-8",
             )
+
+            materialized_artifacts = []
+            for written_file in written_files:
+                materialized_artifacts.append(
+                    await self.artifact_service.save_artifact(
+                        db,
+                        {
+                            "project_id": project_id,
+                            "run_id": run_id,
+                            "artifact_type": "materialized_file",
+                            "name": written_file["path"],
+                            "storage_path": written_file["storage_path"],
+                            "mime_type": self._guess_mime_type(written_file["path"]),
+                            "size_bytes": written_file["size_bytes"],
+                            "metadata": {
+                                "source": "hermes",
+                                "project_relative_path": written_file["path"],
+                                "prototype_version": prototype_version["version"] if prototype_version else None,
+                            },
+                        },
+                    )
+                )
 
             output_artifact = await self.artifact_service.save_artifact(
                 db,
@@ -405,6 +490,15 @@ class Runner:
                 "deleted_files": deleted_files,
                 "prototype_version": prototype_version,
                 "artifacts": [
+                    *[
+                        {
+                            "artifact_id": item["artifact_id"],
+                            "name": item["name"],
+                            "artifact_type": item["artifact_type"],
+                            "storage_path": item["storage_path"],
+                        }
+                        for item in materialized_artifacts
+                    ],
                     {
                         "artifact_id": output_artifact["artifact_id"],
                         "name": output_file.name,

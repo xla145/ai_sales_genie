@@ -32,10 +32,18 @@
               <small>可选</small>
             </div>
             <p class="requirement-input-page__hint">支持上传需求文档、设计稿、参考资料等文件</p>
-            <button class="requirement-input-page__dropzone" type="button" @click="handleAttachmentUpload">
+            <input ref="fileInputRef" class="requirement-input-page__file" type="file" :accept="acceptedUploadTypes" @change="handleFileChange" />
+            <button
+              class="requirement-input-page__dropzone"
+              type="button"
+              :disabled="uploading"
+              @click="openFilePicker"
+              @dragover.prevent
+              @drop.prevent="handleFileDrop"
+            >
               <div class="requirement-input-page__dropzone-icon">↑</div>
-              <strong>点击上传或拖拽文件到此处</strong>
-              <span>支持 PDF、Word、Excel、PPT、图片等格式</span>
+              <strong>{{ uploading ? '正在上传...' : '点击上传或拖拽文件到此处' }}</strong>
+              <span>支持 PDF、Word、Excel、PPT、图片等格式，单个文件不超过 20MB</span>
               <div class="requirement-input-page__tags">
                 <span>.pdf</span><span>.doc</span><span>.xls</span><span>.ppt</span><span>.jpg</span>
               </div>
@@ -61,14 +69,16 @@
               >
                 <div
                   v-for="item in visibleAttachmentItems"
-                  :key="`${item.name}-${item.meta}`"
+                  :key="item.id ?? `${item.name}-${item.meta}`"
                   class="requirement-input-page__attachment"
                 >
                   <div>
                     <strong>{{ item.name }}</strong>
                     <span>{{ item.meta }}</span>
                   </div>
-                  <button type="button" @click="removeAttachment(item)">删除</button>
+                  <button type="button" :disabled="deletingAttachmentId === item.id" @click="removeAttachment(item)">
+                    {{ deletingAttachmentId === item.id ? '删除中...' : '删除' }}
+                  </button>
                 </div>
               </div>
             </div>
@@ -101,15 +111,19 @@ import { ElMessage } from 'element-plus'
 import ProjectLayout from '@/layouts/ProjectLayout.vue'
 import { useProjectStore } from '@/stores/project'
 import { normalizeRequirementAnalysis } from '@/utils/requirement'
-import type { ProjectConfig } from '@/types/project'
+import type { ProjectConfig, RequirementAttachmentItem } from '@/types/project'
 
 const route = useRoute()
 const router = useRouter()
 const projectStore = useProjectStore()
 const saving = ref(false)
+const uploading = ref(false)
+const deletingAttachmentId = ref<string | null>(null)
+const fileInputRef = ref<HTMLInputElement | null>(null)
 const projectSummary = ref('')
-const attachmentItems = ref<Array<{ name: string; meta: string }>>([])
+const attachmentItems = ref<RequirementAttachmentItem[]>([])
 const attachmentsExpanded = ref(false)
+const acceptedUploadTypes = '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.md,.png,.jpg,.jpeg'
 
 const visibleAttachmentItems = computed(() => {
   if (attachmentItems.value.length <= 1 || attachmentsExpanded.value) {
@@ -130,7 +144,7 @@ const hydrate = () => {
 watch(projectMeta, hydrate, { immediate: true, deep: true })
 
 const saveRequirementAnalysis = async (
-  payload: { basic?: { projectSummary?: string }; attachments?: Array<{ name: string; meta: string }> },
+  payload: { basic?: { projectSummary?: string }; attachments?: RequirementAttachmentItem[] },
   successMessage: string,
 ) => {
   if (!project.value) return
@@ -170,28 +184,67 @@ const submitAnalysis = async () => {
   }
 }
 
-const handleAttachmentUpload = async () => {
-  const nextRequirement = normalizeRequirementAnalysis(projectMeta.value)
-  const nextAttachments = [
-    {
-      name: `附件_${nextRequirement.attachments.length + 1}.txt`,
-      meta: new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-'),
-    },
-    ...nextRequirement.attachments,
-  ]
-  if (nextAttachments.length > 1) {
-    attachmentsExpanded.value = false
+const openFilePicker = () => {
+  if (!uploading.value) {
+    fileInputRef.value?.click()
   }
-  await saveRequirementAnalysis({ attachments: nextAttachments }, '附件记录已保存')
 }
 
-const removeAttachment = async (target: { name: string; meta: string }) => {
-  const nextRequirement = normalizeRequirementAnalysis(projectMeta.value)
-  const nextAttachments = nextRequirement.attachments.filter((item) => !(item.name === target.name && item.meta === target.meta))
-  if (nextAttachments.length <= 1) {
-    attachmentsExpanded.value = false
+const uploadFile = async (file: File) => {
+  if (!project.value) return
+  uploading.value = true
+  try {
+    await projectStore.uploadRequirementFile(String(route.params.projectId), file)
+    hydrate()
+    if (attachmentItems.value.length > 1) {
+      attachmentsExpanded.value = false
+    }
+    ElMessage.success('附件上传成功')
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '上传失败')
+  } finally {
+    uploading.value = false
   }
-  await saveRequirementAnalysis({ attachments: nextAttachments }, '附件记录已删除')
+}
+
+const handleFileChange = async (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (file) {
+    await uploadFile(file)
+    input.value = ''
+  }
+}
+
+const handleFileDrop = async (event: DragEvent) => {
+  const file = event.dataTransfer?.files?.[0]
+  if (file) {
+    await uploadFile(file)
+  }
+}
+
+const removeAttachment = async (target: RequirementAttachmentItem) => {
+  if (!project.value) return
+  if (!target.id) {
+    const nextRequirement = normalizeRequirementAnalysis(projectMeta.value)
+    const nextAttachments = nextRequirement.attachments.filter((item) => !(item.name === target.name && item.meta === target.meta))
+    await saveRequirementAnalysis({ attachments: nextAttachments }, '附件记录已删除')
+    return
+  }
+
+  deletingAttachmentId.value = target.id
+  try {
+    await projectStore.deleteRequirementUpload(String(route.params.projectId), target.id)
+    hydrate()
+    if (attachmentItems.value.length <= 1) {
+      attachmentsExpanded.value = false
+    }
+    ElMessage.success('附件已删除')
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '删除失败')
+  } finally {
+    deletingAttachmentId.value = null
+  }
 }
 </script>
 
@@ -273,6 +326,10 @@ const removeAttachment = async (target: { name: string; meta: string }) => {
 .requirement-input-page__side {
   display: grid;
   gap: 24px;
+}
+
+.requirement-input-page__file {
+  display: none;
 }
 
 .requirement-input-page__dropzone {
