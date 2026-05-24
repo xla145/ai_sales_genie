@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -35,6 +36,31 @@ class WorkflowTests(unittest.TestCase):
             self.assertFalse((workspace / "页面详细设计").exists())
             self.assertGreaterEqual(len(list((workspace / "prototype" / "pages").glob("*.html"))), 3)
             self.assertTrue(all(item.ok for item in result.validations))
+            report = (workspace / "generation-report.md").read_text(encoding="utf-8")
+            self.assertIn("LLM 模型：test-model", report)
+            self.assertIn("Skill 根目录：", report)
+            self.assertIn("## 运行诊断", report)
+
+    def test_cli_check_reports_preflight_status(self):
+        with tempfile.TemporaryDirectory() as temp_dir, _configured_test_llm():
+            with patch.object(sys, "argv", ["langgraph-prototype", "--check", "--output-dir", temp_dir]):
+                self.assertEqual(cli_main(), 0)
+
+    def test_skill_root_can_be_configured(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            skill_dir = root / "demo-skill"
+            skill_dir.mkdir()
+            (skill_dir / "SKILL.md").write_text("# Demo", encoding="utf-8")
+            try:
+                with patch.dict(os.environ, {"LANGGRAPH_PROTOTYPE_SKILLS_ROOT": str(root)}):
+                    skills_root.cache_clear()
+                    load_skill.cache_clear()
+                    self.assertEqual(skill_file_path("demo-skill").resolve(), (skill_dir / "SKILL.md").resolve())
+                    self.assertEqual(load_skill("demo-skill"), "# Demo")
+            finally:
+                skills_root.cache_clear()
+                load_skill.cache_clear()
 
     def test_validation_reports_missing_and_empty_outputs(self):
         with tempfile.TemporaryDirectory() as temp_dir:

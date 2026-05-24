@@ -17,6 +17,7 @@ def skill_file_path(skill_name: str) -> Path:
     return skills_root() / skill_name / "SKILL.md"
 
 
+@lru_cache(maxsize=1)
 def skills_root() -> Path:
     configured = os.getenv("LANGGRAPH_PROTOTYPE_SKILLS_ROOT")
     if configured:

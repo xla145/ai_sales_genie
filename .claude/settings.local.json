@@ -99,7 +99,8 @@
       "Bash(/Users/mac/xula/ai_sales_genie/.venv/bin/langgraph-prototype *)",
       "Bash(OPENAI_TIMEOUT=900 /Users/mac/xula/ai_sales_genie/.venv/bin/python *)",
       "Bash(OPENAI_TIMEOUT=900 /Users/mac/xula/ai_sales_genie/.venv/bin/langgraph-prototype *)",
-      "Bash(gh repo *)"
+      "Bash(gh repo *)",
+      "Bash(PYTHONPATH=\"/Users/mac/xula/ai_sales_genie/langgraph_prototype_project/src\" python *)"
     ]
   }
 }
