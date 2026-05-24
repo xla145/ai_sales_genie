@@ -1,0 +1,1499 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能调度 - 调度中心</title>
+    <link rel="stylesheet" href="../assets/css/styles.css">
+    <style>
+        /* 页面特定样式 */
+        .dispatch-page {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background: #f5f7fa;
+        }
+        
+        .dispatch-header {
+            background: #fff;
+            padding: 16px 24px;
+            border-bottom: 1px solid #e8e8e8;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .dispatch-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #262626;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .dispatch-title::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 20px;
+            background: #1890ff;
+            border-radius: 2px;
+        }
+        
+        .dispatch-main {
+            flex: 1;
+            display: flex;
+            padding: 16px;
+            gap: 16px;
+            overflow: hidden;
+        }
+        
+        .dispatch-left {
+            flex: 0 0 58%;
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        
+        .dispatch-right {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .panel-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .panel-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #262626;
+        }
+        
+        .panel-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .search-bar {
+            padding: 16px 20px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .search-input {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .filter-select {
+            width: 140px;
+        }
+        
+        .order-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 20px 20px;
+        }
+        
+        .order-card {
+            background: #fafafa;
+            border: 1px solid #e8e8e8;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .order-card:hover {
+            border-color: #1890ff;
+            background: #f0f7ff;
+        }
+        
+        .order-card.selected {
+            border-color: #1890ff;
+            background: #e6f7ff;
+            box-shadow: 0 0 0 2px rgba(24,144,255,0.2);
+        }
+        
+        .order-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .order-no {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1890ff;
+        }
+        
+        .order-status {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .order-status.pending {
+            background: #fff7e6;
+            color: #fa8c16;
+            border: 1px solid #ffd591;
+        }
+        
+        .order-route {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: #595959;
+        }
+        
+        .order-arrow {
+            color: #8c8c8c;
+        }
+        
+        .order-info {
+            display: flex;
+            gap: 16px;
+            font-size: 12px;
+            color: #8c8c8c;
+            margin-bottom: 12px;
+        }
+        
+        .order-card-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+        
+        .pagination-wrap {
+            padding: 16px 20px;
+            border-top: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .pagination-info {
+            font-size: 13px;
+            color: #8c8c8c;
+        }
+        
+        .resource-panel {
+            flex: 1;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .resource-stats {
+            display: flex;
+            padding: 16px 20px;
+            gap: 16px;
+        }
+        
+        .stat-card {
+            flex: 1;
+            background: linear-gradient(135deg, #e6f7ff 0%, #f0f7ff 100%);
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            border: 1px solid #91d5ff;
+        }
+        
+        .stat-card.drivers {
+            background: linear-gradient(135deg, #f6ffed 0%, #f9fce6 100%);
+            border-color: #b7eb8f;
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1890ff;
+        }
+        
+        .stat-card.drivers .stat-value {
+            color: #52c41a;
+        }
+        
+        .stat-label {
+            font-size: 13px;
+            color: #8c8c8c;
+            margin-top: 4px;
+        }
+        
+        .resource-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 20px 20px;
+        }
+        
+        .resource-section {
+            margin-bottom: 20px;
+        }
+        
+        .resource-section-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #595959;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .resource-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .resource-tag {
+            padding: 6px 12px;
+            background: #fafafa;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .resource-tag:hover {
+            border-color: #1890ff;
+            color: #1890ff;
+        }
+        
+        .resource-tag.selected {
+            background: #e6f7ff;
+            border-color: #1890ff;
+            color: #1890ff;
+        }
+        
+        .resource-tag.idle {
+            border-color: #87e8de;
+            color: #13c2c2;
+        }
+        
+        .resource-tag.idle.selected {
+            background: #e6fffb;
+        }
+        
+        .dispatch-panel {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            padding: 20px;
+            min-height: 200px;
+        }
+        
+        .dispatch-panel-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #262626;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .selected-items {
+            margin-bottom: 20px;
+        }
+        
+        .selected-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: #fafafa;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+        
+        .selected-item-label {
+            color: #8c8c8c;
+            min-width: 60px;
+        }
+        
+        .selected-item-value {
+            color: #262626;
+            font-weight: 500;
+        }
+        
+        .dispatch-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+        
+        .empty-dispatch {
+            text-align: center;
+            padding: 40px 20px;
+            color: #8c8c8c;
+        }
+        
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+        
+        /* 弹窗样式 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal-overlay.active {
+            display: flex;
+        }
+        
+        .modal {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            max-width: 700px;
+            width: 90%;
+            max-height: 80vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #e8e8e8;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #262626;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #8c8c8c;
+            padding: 4px;
+        }
+        
+        .modal-close:hover {
+            color: #262626;
+        }
+        
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        
+        .modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid #e8e8e8;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+        
+        /* 派单弹窗 */
+        .dispatch-form {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .dispatch-form-section {
+            flex: 1;
+        }
+        
+        .dispatch-form-section h4 {
+            font-size: 13px;
+            font-weight: 600;
+            color: #595959;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .dispatch-form-item {
+            margin-bottom: 12px;
+        }
+        
+        .dispatch-form-label {
+            font-size: 12px;
+            color: #8c8c8c;
+            margin-bottom: 4px;
+        }
+        
+        .dispatch-form-value {
+            font-size: 13px;
+            color: #262626;
+        }
+        
+        .dispatch-form-select {
+            width: 100%;
+        }
+        
+        .route-info {
+            background: #fafafa;
+            border-radius: 4px;
+            padding: 12px;
+            margin-top: 12px;
+        }
+        
+        .route-info-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+        
+        .route-info-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .route-info-label {
+            color: #8c8c8c;
+        }
+        
+        .route-info-value {
+            color: #262626;
+            font-weight: 500;
+        }
+        
+        /* 智能派单弹窗 */
+        .smart-dispatch-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .smart-dispatch-item {
+            background: #fafafa;
+            border: 1px solid #e8e8e8;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+        
+        .smart-dispatch-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .smart-match-score {
+            background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%);
+            color: #fff;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .smart-dispatch-content {
+            display: flex;
+            gap: 16px;
+        }
+        
+        .smart-dispatch-vehicle,
+        .smart-dispatch-driver {
+            flex: 1;
+            background: #fff;
+            border-radius: 4px;
+            padding: 12px;
+        }
+        
+        .smart-dispatch-label {
+            font-size: 12px;
+            color: #8c8c8c;
+            margin-bottom: 4px;
+        }
+        
+        .smart-dispatch-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #262626;
+        }
+        
+        .smart-dispatch-route {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px dashed #e8e8e8;
+            font-size: 12px;
+            color: #8c8c8c;
+        }
+        
+        /* 司机通知弹窗 */
+        .driver-notify {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .driver-notify-icon {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #1890ff 0%, #40a9ff 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            font-size: 28px;
+            color: #fff;
+        }
+        
+        .driver-notify-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #262626;
+            margin-bottom: 8px;
+        }
+        
+        .driver-notify-desc {
+            font-size: 14px;
+            color: #8c8c8c;
+            margin-bottom: 20px;
+        }
+        
+        .driver-notify-content {
+            background: #fafafa;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: left;
+            margin-bottom: 20px;
+        }
+        
+        .driver-notify-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+        
+        .driver-notify-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .driver-notify-label {
+            color: #8c8c8c;
+        }
+        
+        .driver-notify-value {
+            color: #262626;
+            font-weight: 500;
+        }
+        
+        /* 路线规划弹窗 */
+        .route-map {
+            width: 100%;
+            height: 300px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .route-map-placeholder {
+            text-align: center;
+            color: #8c8c8c;
+        }
+        
+        .route-map-icon {
+            font-size: 48px;
+            margin-bottom: 8px;
+            opacity: 0.5;
+        }
+        
+        .route-points {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .route-point {
+            text-align: center;
+        }
+        
+        .route-point-icon {
+            width: 40px;
+            height: 40px;
+            background: #1890ff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 8px;
+            color: #fff;
+            font-weight: 600;
+        }
+        
+        .route-point.end .route-point-icon {
+            background: #52c41a;
+        }
+        
+        .route-point-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #262626;
+        }
+        
+        .route-point-address {
+            font-size: 12px;
+            color: #8c8c8c;
+            margin-top: 2px;
+        }
+        
+        .route-line {
+            flex: 1;
+            height: 2px;
+            background: linear-gradient(90deg, #1890ff 0%, #52c41a 100%);
+            position: relative;
+        }
+        
+        .route-line::before,
+        .route-line::after {
+            content: '';
+            position: absolute;
+            top: -4px;
+            width: 10px;
+            height: 10px;
+            background: #fff;
+            border: 2px solid #1890ff;
+            border-radius: 50%;
+        }
+        
+        .route-line::after {
+            right: 0;
+            border-color: #52c41a;
+        }
+        
+        .route-stats {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+        
+        .route-stat {
+            text-align: center;
+            padding: 12px 24px;
+            background: #fafafa;
+            border-radius: 8px;
+        }
+        
+        .route-stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1890ff;
+        }
+        
+        .route-stat-label {
+            font-size: 12px;
+            color: #8c8c8c;
+            margin-top: 4px;
+        }
+        
+        .checkbox-wrap {
+            display: inline-flex;
+            align-items: center;
+            margin-right: 12px;
+        }
+        
+        .checkbox-wrap input {
+            margin-right: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="dispatch-page">
+        <!-- 顶部操作栏 -->
+        <div class="dispatch-header">
+            <div class="dispatch-title">智能调度 - 调度中心</div>
+            <div class="panel-actions">
+                <button class="btn btn-ghost" onclick="refreshData()">
+                    <span>🔄</span> 刷新
+                </button>
+            </div>
+        </div>
+        
+        <!-- 主内容区 -->
+        <div class="dispatch-main">
+            <!-- 左侧待派单订单列表 -->
+            <div class="dispatch-left">
+                <div class="panel-header">
+                    <span class="panel-title">待派单订单</span>
+                    <div class="panel-actions">
+                        <button class="btn btn-primary" onclick="openSmartDispatch()">
+                            智能派单
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="search-bar">
+                    <input type="text" class="input search-input" placeholder="搜索订单号或客户名称..." id="orderSearch" onkeyup="filterOrders()">
+                    <select class="select filter-select" id="cargoTypeFilter" onchange="filterOrders()">
+                        <option value="">全部货物类型</option>
+                        <option value="电子产品">电子产品</option>
+                        <option value="服装">服装</option>
+                        <option value="食品">食品</option>
+                        <option value="建材">建材</option>
+                        <option value="机械设备">机械设备</option>
+                    </select>
+                </div>
+                
+                <div class="order-list" id="orderList">
+                    <!-- 订单卡片将由JS动态生成 -->
+                </div>
+                
+                <div class="pagination-wrap">
+                    <span class="pagination-info">共 <span id="totalOrders">10</span> 条记录</span>
+                    <div class="pagination">
+                        <button class="btn btn-ghost btn-sm" onclick="prevPage()" id="prevBtn">上一页</button>
+                        <span class="pagination-page">1 / 1</span>
+                        <button class="btn btn-ghost btn-sm" onclick="nextPage()" id="nextBtn">下一页</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 右侧区域 -->
+            <div class="dispatch-right">
+                <!-- 资源面板 -->
+                <div class="resource-panel">
+                    <div class="panel-header">
+                        <span class="panel-title">可用资源</span>
+                    </div>
+                    
+                    <div class="resource-stats">
+                        <div class="stat-card">
+                            <div class="stat-value" id="vehicleCount">5</div>
+                            <div class="stat-label">可用车辆</div>
+                        </div>
+                        <div class="stat-card drivers">
+                            <div class="stat-value" id="driverCount">8</div>
+                            <div class="stat-label">可用司机</div>
+                        </div>
+                    </div>
+                    
+                    <div class="resource-content">
+                        <div class="resource-section">
+                            <div class="resource-section-title">
+                                <span>🚛</span> 可用车辆
+                            </div>
+                            <div class="resource-items" id="vehicleList">
+                                <!-- 车辆标签将由JS动态生成 -->
+                            </div>
+                        </div>
+                        
+                        <div class="resource-section">
+                            <div class="resource-section-title">
+                                <span>👤</span> 可用司机
+                            </div>
+                            <div class="resource-items" id="driverList">
+                                <!-- 司机标签将由JS动态生成 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 派单操作面板 -->
+                <div class="dispatch-panel">
+                    <div class="dispatch-panel-title">派单操作</div>
+                    
+                    <div id="dispatchContent">
+                        <div class="empty-dispatch">
+                            <div class="empty-icon">📋</div>
+                            <div>请先选择订单和资源</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 手动派单弹窗 -->
+    <div class="modal-overlay" id="dispatchModal">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title">手动派单</span>
+                <button class="modal-close" onclick="closeModal('dispatchModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="dispatch-form">
+                    <div class="dispatch-form-section">
+                        <h4>订单信息</h4>
+                        <div class="dispatch-form-item">
+                            <div class="dispatch-form-label">订单号</div>
+                            <div class="dispatch-form-value" id="modalOrderNo">-</div>
+                        </div>
+                        <div class="dispatch-form-item">
+                            <div class="dispatch-form-label">路线</div>
+                            <div class="dispatch-form-value" id="modalOrderRoute">-</div>
+                        </div>
+                        <div class="dispatch-form-item">
+                            <div class="dispatch-form-label">货物</div>
+                            <div class="dispatch-form-value" id="modalOrderCargo">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="dispatch-form-section">
+                        <h4>选择资源</h4>
+                        <div class="dispatch-form-item">
+                            <div class="dispatch-form-label">选择车辆 *</div>
+                            <select class="select dispatch-form-select" id="vehicleSelect" onchange="calculateRoute()">
+                                <option value="">请选择车辆</option>
+                            </select>
+                        </div>
+                        <div class="dispatch-form-item">
+                            <div class="dispatch-form-label">选择司机 *</div>
+                            <select class="select dispatch-form-select" id="driverSelect" onchange="calculateRoute()">
+                                <option value="">请选择司机</option>
+                            </select>
+                        </div>
+                        
+                        <div class="route-info" id="routeInfo" style="display: none;">
+                            <div class="route-info-item">
+                                <span class="route-info-label">预计距离</span>
+                                <span class="route-info-value" id="estimatedDistance">-</span>
+                            </div>
+                            <div class="route-info-item">
+                                <span class="route-info-label">预计时间</span>
+                                <span class="route-info-value" id="estimatedTime">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('dispatchModal')">取消</button>
+                <button class="btn btn-primary" onclick="confirmDispatch()">确认派单</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 智能派单弹窗 -->
+    <div class="modal-overlay" id="smartDispatchModal">
+        <div class="modal" style="max-width: 800px;">
+            <div class="modal-header">
+                <span class="modal-title">智能派单方案</span>
+                <button class="modal-close" onclick="closeModal('smartDispatchModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="smart-dispatch-list" id="smartDispatchList">
+                    <!-- 智能派单方案将由JS动态生成 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('smartDispatchModal')">取消</button>
+                <button class="btn btn-primary" onclick="confirmSmartDispatch()">确认派单</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 路线规划弹窗 -->
+    <div class="modal-overlay" id="routeModal">
+        <div class="modal" style="max-width: 600px;">
+            <div class="modal-header">
+                <span class="modal-title">路线规划</span>
+                <button class="modal-close" onclick="closeModal('routeModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="route-map">
+                    <div class="route-map-placeholder">
+                        <div class="route-map-icon">🗺️</div>
+                        <div>地图加载中...</div>
+                    </div>
+                </div>
+                
+                <div class="route-points">
+                    <div class="route-point start">
+                        <div class="route-point-icon">A</div>
+                        <div class="route-point-label">起点</div>
+                        <div class="route-point-address" id="routeStart">北京市</div>
+                    </div>
+                    <div class="route-line"></div>
+                    <div class="route-point end">
+                        <div class="route-point-icon">B</div>
+                        <div class="route-point-label">终点</div>
+                        <div class="route-point-address" id="routeEnd">上海市</div>
+                    </div>
+                </div>
+                
+                <div class="route-stats">
+                    <div class="route-stat">
+                        <div class="route-stat-value" id="routeDistance">1280</div>
+                        <div class="route-stat-label">预计距离(km)</div>
+                    </div>
+                    <div class="route-stat">
+                        <div class="route-stat-value" id="routeTime">14</div>
+                        <div class="route-stat-label">预计时间(小时)</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('routeModal')">关闭</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 司机通知弹窗 -->
+    <div class="modal-overlay" id="notifyModal">
+        <div class="modal" style="max-width: 420px;">
+            <div class="modal-body">
+                <div class="driver-notify">
+                    <div class="driver-notify-icon">📱</div>
+                    <div class="driver-notify-title">新任务通知</div>
+                    <div class="driver-notify-desc">您有新运输任务，请注意接收</div>
+                    
+                    <div class="driver-notify-content">
+                        <div class="driver-notify-row">
+                            <span class="driver-notify-label">订单号</span>
+                            <span class="driver-notify-value" id="notifyOrderNo">-</span>
+                        </div>
+                        <div class="driver-notify-row">
+                            <span class="driver-notify-label">路线</span>
+                            <span class="driver-notify-value" id="notifyRoute">-</span>
+                        </div>
+                        <div class="driver-notify-row">
+                            <span class="driver-notify-label">货物</span>
+                            <span class="driver-notify-value" id="notifyCargo">-</span>
+                        </div>
+                        <div class="driver-notify-row">
+                            <span class="driver-notify-label">车辆</span>
+                            <span class="driver-notify-value" id="notifyVehicle">-</span>
+                        </div>
+                        <div class="driver-notify-row">
+                            <span class="driver-notify-label">司机</span>
+                            <span class="driver-notify-value" id="notifyDriver">-</span>
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-primary" style="width: 100%;" onclick="closeModal('notifyModal'); showToast('司机已确认接收任务', 'success');">确认接收</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="../assets/js/mock-data.js"></script>
+    <script src="../assets/js/app.js"></script>
+    <script>
+        // 页面状态
+        let currentPage = 1;
+        let pageSize = 10;
+        let selectedOrders = [];
+        let selectedVehicle = null;
+        let selectedDriver = null;
+        let currentDispatchOrder = null;
+        
+        // 模拟数据
+        const mockOrders = [
+            { orderNo: 'ORD2024001', shipperAddress: '北京市朝阳区', consigneeAddress: '上海市浦东新区', cargoType: '电子产品', cargoWeight: 5, expectedTime: '2024-01-20 18:00', status: 'PENDING' },
+            { orderNo: 'ORD2024002', shipperAddress: '广州市天河区', consigneeAddress: '深圳市南山区', cargoType: '服装', cargoWeight: 3, expectedTime: '2024-01-20 20:00', status: 'PENDING' },
+            { orderNo: 'ORD2024003', shipperAddress: '武汉市江汉区', consigneeAddress: '杭州市西湖区', cargoType: '食品', cargoWeight: 8, expectedTime: '2024-01-21 12:00', status: 'PENDING' },
+            { orderNo: 'ORD2024004', shipperAddress: '成都市武侯区', consigneeAddress: '重庆市渝北区', cargoType: '建材', cargoWeight: 12, expectedTime: '2024-01-21 18:00', status: 'PENDING' },
+            { orderNo: 'ORD2024005', shipperAddress: '南京市鼓楼区', consigneeAddress: '苏州市姑苏区', cargoType: '机械设备', cargoWeight: 15, expectedTime: '2024-01-22 10:00', status: 'PENDING' },
+            { orderNo: 'ORD2024006', shipperAddress: '西安市雁塔区', consigneeAddress: '兰州市城关区', cargoType: '电子产品', cargoWeight: 4, expectedTime: '2024-01-22 16:00', status: 'PENDING' },
+            { orderNo: 'ORD2024007', shipperAddress: '天津市和平区', consigneeAddress: '石家庄市长安区', cargoType: '服装', cargoWeight: 6, expectedTime: '2024-01-20 22:00', status: 'PENDING' },
+            { orderNo: 'ORD2024008', shipperAddress: '青岛市市南区', consigneeAddress: '济南市历下区', cargoType: '食品', cargoWeight: 7, expectedTime: '2024-01-21 14:00', status: 'PENDING' },
+            { orderNo: 'ORD2024009', shipperAddress: '郑州市金水区', consigneeAddress: '长沙市岳麓区', cargoType: '建材', cargoWeight: 10, expectedTime: '2024-01-23 10:00', status: 'PENDING' },
+            { orderNo: 'ORD2024010', shipperAddress: '哈尔滨市南岗区', consigneeAddress: '沈阳市和平区', cargoType: '机械设备', cargoWeight: 18, expectedTime: '2024-01-23 18:00', status: 'PENDING' }
+        ];
+        
+        const mockVehicles = [
+            { plateNumber: '京A12345', vehicleType: '厢式货车', loadCapacity: 10, currentStatus: 'IDLE', currentLocation: '北京朝阳区' },
+            { plateNumber: '京B67890', vehicleType: '平板货车', loadCapacity: 15, currentStatus: 'IDLE', 'currentLocation': '北京海淀区' },
+            { plateNumber: '粤B88888', vehicleType: '厢式货车', loadCapacity: 8, currentStatus: 'IDLE', 'currentLocation': '深圳南山区' },
+            { plateNumber: '粤A99999', vehicleType: '冷藏车', loadCapacity: 12, currentStatus: 'IDLE', 'currentLocation': '广州天河区' },
+            { plateNumber: '鄂A11111', vehicleType: '厢式货车', loadCapacity: 10, currentStatus: 'IDLE', 'currentLocation': '武汉江汉区' }
+        ];
+        
+        const mockDrivers = [
+            { driverName: '张三', phone: '13800138001', licenseType: 'A2', currentStatus: 'IDLE', currentLocation: '北京朝阳区' },
+            { driverName: '李四', phone: '13800138002', licenseType: 'A2', currentStatus: 'IDLE', 'currentLocation': '北京海淀区' },
+            { driverName: '王五', phone: '13800138003', licenseType: 'B2', currentStatus: 'IDLE', 'currentLocation': '深圳南山区' },
+            { driverName: '赵六', phone: '13800138004', licenseType: 'A2', currentStatus: 'IDLE', 'currentLocation': '广州天河区' },
+            { driverName: '钱七', phone: '13800138005', licenseType: 'B2', currentStatus: 'IDLE', 'currentLocation': '武汉江汉区' },
+            { driverName: '孙八', phone: '13800138006', licenseType: 'A2', currentStatus: 'IDLE', 'currentLocation': '杭州西湖区' },
+            { driverName: '周九', phone: '13800138007', licenseType: 'B2', currentStatus: 'IDLE', 'currentLocation': '上海浦东新区' },
+            { driverName: '吴十', phone: '13800138008', licenseType: 'A2', currentStatus: 'IDLE', 'currentLocation': '成都武侯区' }
+        ];
+        
+        // 初始化页面
+        function initPage() {
+            renderOrders();
+            renderVehicles();
+            renderDrivers();
+        }
+        
+        // 渲染订单列表
+        function renderOrders() {
+            const orderList = document.getElementById('orderList');
+            const searchValue = document.getElementById('orderSearch').value.toLowerCase();
+            const cargoType = document.getElementById('cargoTypeFilter').value;
+            
+            let filteredOrders = mockOrders.filter(order => {
+                const matchSearch = order.orderNo.toLowerCase().includes(searchValue) || 
+                    order.shipperAddress.toLowerCase().includes(searchValue) ||
+                    order.consigneeAddress.toLowerCase().includes(searchValue);
+                const matchCargo = !cargoType || order.cargoType === cargoType;
+                return matchSearch && matchCargo;
+            });
+            
+            document.getElementById('totalOrders').textContent = filteredOrders.length;
+            
+            orderList.innerHTML = filteredOrders.map((order, index) => `
+                <div class="order-card ${selectedOrders.includes(order.orderNo) ? 'selected' : ''}" 
+                     onclick="selectOrder('${order.orderNo}')">
+                    <div class="order-card-header">
+                        <span class="order-no">${order.orderNo}</span>
+                        <span class="order-status pending">待派单</span>
+                    </div>
+                    <div class="order-route">
+                        <span>${order.shipperAddress}</span>
+                        <span class="order-arrow">→</span>
+                        <span>${order.consigneeAddress}</span>
+                    </div>
+                    <div class="order-info">
+                        <span>货物类型: ${order.cargoType}</span>
+                        <span>重量: ${order.cargoWeight}吨</span>
+                        <span>期望: ${order.expectedTime}</span>
+                    </div>
+                    <div class="order-card-footer">
+                        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); openDispatchModal('${order.orderNo}')">
+                            派单
+                        </button>
+                        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); showRoute('${order.orderNo}')">
+                            查看路线
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // 渲染车辆列表
+        function renderVehicles() {
+            const vehicleList = document.getElementById('vehicleList');
+            vehicleList.innerHTML = mockVehicles.map(vehicle => `
+                <div class="resource-tag ${vehicle.currentStatus === 'IDLE' ? 'idle' : ''} ${selectedVehicle === vehicle.plateNumber ? 'selected' : ''}"
+                     onclick="selectVehicle('${vehicle.plateNumber}')">
+                    <strong>${vehicle.plateNumber}</strong>
+                    <span>${vehicle.vehicleType} | ${vehicle.loadCapacity}吨</span>
+                </div>
+            `).join('');
+            
+            document.getElementById('vehicleCount').textContent = mockVehicles.filter(v => v.currentStatus === 'IDLE').length;
+        }
+        
+        // 渲染司机列表
+        function renderDrivers() {
+            const driverList = document.getElementById('driverList');
+            driverList.innerHTML = mockDrivers.map(driver => `
+                <div class="resource-tag ${driver.currentStatus === 'IDLE' ? 'idle' : ''} ${selectedDriver === driver.driverName ? 'selected' : ''}"
+                     onclick="selectDriver('${driver.driverName}')">
+                    <strong>${driver.driverName}</strong>
+                    <span>${driver.licenseType} | ${driver.currentLocation}</span>
+                </div>
+            `).join('');
+            
+            document.getElementById('driverCount').textContent = mockDrivers.filter(d => d.currentStatus === 'IDLE').length;
+        }
+        
+        // 选择订单
+        function selectOrder(orderNo) {
+            const index = selectedOrders.indexOf(orderNo);
+            if (index > -1) {
+                selectedOrders.splice(index, 1);
+            } else {
+                if (selectedOrders.length >= 3) {
+                    showToast('最多选择3个订单进行批量派单', 'warning');
+                    return;
+                }
+                selectedOrders.push(orderNo);
+            }
+            renderOrders();
+            updateDispatchPanel();
+        }
+        
+        // 选择车辆
+        function selectVehicle(plateNumber) {
+            selectedVehicle = selectedVehicle === plateNumber ? null : plateNumber;
+            renderVehicles();
+            updateDispatchPanel();
+        }
+        
+        // 选择司机
+        function selectDriver(driverName) {
+            selectedDriver = selectedDriver === driverName ? null : driverName;
+            renderDrivers();
+            updateDispatchPanel();
+        }
+        
+        // 更新派单面板
+        function updateDispatchPanel() {
+            const content = document.getElementById('dispatchContent');
+            
+            if (selectedOrders.length === 0 && !selectedVehicle && !selectedDriver) {
+                content.innerHTML = `
+                    <div class="empty-dispatch">
+                        <div class="empty-icon">📋</div>
+                        <div>请先选择订单和资源</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '<div class="selected-items">';
+            
+            if (selectedOrders.length > 0) {
+                html += `<div class="selected-item">
+                    <span class="selected-item-label">已选订单:</span>
+                    <span class="selected-item-value">${selectedOrders.join(', ')}</span>
+                </div>`;
+            }
+            
+            if (selectedVehicle) {
+                html += `<div class="selected-item">
+                    <span class="selected-item-label">已选车辆:</span>
+                    <span class="selected-item-value">${selectedVehicle}</span>
+                </div>`;
+            }
+            
+            if (selectedDriver) {
+                html += `<div class="selected-item">
+                    <span class="selected-item-label">已选司机:</span>
+                    <span class="selected-item-value">${selectedDriver}</span>
+                </div>`;
+            }
+            
+            html += '</div>';
+            
+            const canDispatch = selectedOrders.length > 0 && selectedVehicle && selectedDriver;
+            
+            html += `<div class="dispatch-actions">
+                <button class="btn btn-secondary" onclick="clearSelection()">清空</button>
+                <button class="btn btn-primary" ${canDispatch ? '' : 'disabled'} onclick="quickDispatch()">
+                    确认派单
+                </button>
+            </div>`;
+            
+            content.innerHTML = html;
+        }
+        
+        // 清空选择
+        function clearSelection() {
+            selectedOrders = [];
+            selectedVehicle = null;
+            selectedDriver = null;
+            renderOrders();
+            renderVehicles();
+            renderDrivers();
+            updateDispatchPanel();
+            showToast('已清空选择', 'info');
+        }
+        
+        // 筛选订单
+        function filterOrders() {
+            renderOrders();
+        }
+        
+        // 分页
+        function prevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                renderOrders();
+            }
+        }
+        
+        function nextPage() {
+            currentPage++;
+            renderOrders();
+        }
+        
+        // 刷新数据
+        function refreshData() {
+            showToast('数据已刷新', 'success');
+            initPage();
+        }
+        
+        // 打开手动派单弹窗
+        function openDispatchModal(orderNo) {
+            currentDispatchOrder = mockOrders.find(o => o.orderNo === orderNo);
+            if (!currentDispatchOrder) return;
+            
+            document.getElementById('modalOrderNo').textContent = currentDispatchOrder.orderNo;
+            document.getElementById('modalOrderRoute').textContent = `${currentDispatchOrder.shipperAddress} → ${currentDispatchOrder.consigneeAddress}`;
+            document.getElementById('modalOrderCargo').textContent = `${currentDispatchOrder.cargoType} (${currentDispatchOrder.cargoWeight}吨)`;
+            
+            // 填充车辆下拉框
+            const vehicleSelect = document.getElementById('vehicleSelect');
+            vehicleSelect.innerHTML = '<option value="">请选择车辆</option>' + 
+                mockVehicles.filter(v => v.currentStatus === 'IDLE').map(v => 
+                    `<option value="${v.plateNumber}">${v.plateNumber} - ${v.vehicleType} (${v.loadCapacity}吨)</option>`
+                ).join('');
+            
+            // 填充司机下拉框
+            const driverSelect = document.getElementById('driverSelect');
+            driverSelect.innerHTML = '<option value="">请选择司机</option>' + 
+                mockDrivers.filter(d => d.currentStatus === 'IDLE').map(d => 
+                    `<option value="${d.driverName}">${d.driverName} - ${d.licenseType}</option>`
+                ).join('');
+            
+            document.getElementById('routeInfo').style.display = 'none';
+            openModal('dispatchModal');
+        }
+        
+        // 计算路线
+        function calculateRoute() {
+            const vehicleSelect = document.getElementById('vehicleSelect');
+            const driverSelect = document.getElementById('driverSelect');
+            
+            if (!vehicleSelect.value || !driverSelect.value) {
+                document.getElementById('routeInfo').style.display = 'none';
+                return;
+            }
+            
+            // 模拟路线计算
+            const distance = Math.floor(Math.random() * 800) + 500;
+            const time = Math.floor(distance / 80);
+            
+            document.getElementById('estimatedDistance').textContent = `${distance} 公里`;
+            document.getElementById('estimatedTime').textContent = `${time} 小时`;
+            document.getElementById('routeInfo').style.display = 'block';
+        }
+        
+        // 确认派单（手动）
+        function confirmDispatch() {
+            const vehicleSelect = document.getElementById('vehicleSelect');
+            const driverSelect = document.getElementById('driverSelect');
+            
+            if (!vehicleSelect.value || !driverSelect.value) {
+                showToast('请选择车辆和司机', 'error');
+                return;
+            }
+            
+            // 获取选中资源信息
+            const vehicle = mockVehicles.find(v => v.plateNumber === vehicleSelect.value);
+            const driver = mockDrivers.find(d => d.driverName === driverSelect.value);
+            
+            closeModal('dispatchModal');
+            
+            // 显示司机通知
+            document.getElementById('notifyOrderNo').textContent = currentDispatchOrder.orderNo;
+            document.getElementById('notifyRoute').textContent = `${currentDispatchOrder.shipperAddress} → ${currentDispatchOrder.consigneeAddress}`;
+            document.getElementById('notifyCargo').textContent = `${currentDispatchOrder.cargoType} (${currentDispatchOrder.cargoWeight}吨)`;
+            document.getElementById('notifyVehicle').textContent = vehicle.plateNumber;
+            document.getElementById('notifyDriver').textContent = driver.driverName;
+            
+            openModal('notifyModal');
+        }
+        
+        // 快速派单
+        function quickDispatch() {
+            if (!selectedOrders.length || !selectedVehicle || !selectedDriver) {
+                showToast('请选择订单、车辆和司机', 'error');
+                return;
+            }
+            
+            const order = mockOrders.find(o => o.orderNo === selectedOrders[0]);
+            const vehicle = mockVehicles.find(v => v.plateNumber === selectedVehicle);
+            const driver = mockDrivers.find(d => d.driverName === selectedDriver);
+            
+            // 显示司机通知
+            document.getElementById('notifyOrderNo').textContent = order.orderNo;
+            document.getElementById('notifyRoute').textContent = `${order.shipperAddress} → ${order.consigneeAddress}`;
+            document.getElementById('notifyCargo').textContent = `${order.cargoType} (${order.cargoWeight}吨)`;
+            document.getElementById('notifyVehicle').textContent = vehicle.plateNumber;
+            document.getElementById('notifyDriver').textContent = driver.driverName;
+            
+            openModal('notifyModal');
+            
+            // 清除选择
+            selectedOrders = [];
+            selectedVehicle = null;
+            selectedDriver = null;
+            renderOrders();
+            renderVehicles();
+            renderDrivers();
+            updateDispatchPanel();
+        }
+        
+        // 打开智能派单弹窗
+        function openSmartDispatch() {
+            if (selectedOrders.length === 0) {
+                showToast('请先选择订单', 'warning');
+                return;
+            }
+            
+            const smartDispatchList = document.getElementById('smartDispatchList');
+            
+            // 为每个选中订单生成智能推荐方案
+            let html = '';
+            selectedOrders.forEach(orderNo => {
+                const order = mockOrders.find(o => o.orderNo === orderNo);
+                if (!order) return;
+                
+                // 智能匹配算法：优先选择载重匹配、距离最近的
+                const availableVehicles = mockVehicles.filter(v => v.currentStatus === 'IDLE' && v.loadCapacity >= order.cargoWeight);
+                const availableDrivers = mockDrivers.filter(d => d.currentStatus === 'IDLE');
+                
+                // 选择最优车辆（载重最接近）
+                const bestVehicle = availableVehicles.sort((a, b) => a.loadCapacity - b.loadCapacity)[0];
+                const bestDriver = availableDrivers[Math.floor(Math.random() * availableDrivers.length)];
+                
+                const score = Math.floor(Math.random() * 15) + 85; // 85-99分
+                const distance = Math.floor(Math.random() * 800) + 500;
+                const time = Math.floor(distance / 80);
+                
+                html += `
+                    <div class="smart-dispatch-item">
+                        <div class="smart-dispatch-header">
+                            <span class="order-no">${order.orderNo}</span>
+                            <span class="smart-match-score">匹配度 ${score}%</span>
+                        </div>
+                        <div class="smart-dispatch-content">
+                            <div class="smart-dispatch-vehicle">
+                                <div class="smart-dispatch-label">推荐车辆</div>
+                                <div class="smart-dispatch-value">${bestVehicle ? bestVehicle.plateNumber : '暂无'}</div>
+                                <div style="font-size: 12px; color: #8c8c8c; margin-top: 4px;">
+                                    ${bestVehicle ? bestVehicle.vehicleType + ' | ' + bestVehicle.loadCapacity + '吨' : '-'}
+                                </div>
+                            </div>
+                            <div class="smart-dispatch-driver">
+                                <div class="smart-dispatch-label">推荐司机</div>
+                                <div class="smart-dispatch-value">${bestDriver ? bestDriver.driverName : '暂无'}</div>
+                                <div style="font-size: 12px; color: #8c8c8c; margin-top: 4px;">
+                                    ${bestDriver ? bestDriver.licenseType + ' | ' + bestDriver.currentLocation : '-'}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="smart-dispatch-route">
+                            📍 ${order.shipperAddress} → ${order.consigneeAddress} | 预计 ${distance}公里 / ${time}小时
+                        </div>
+                    </div>
+                `;
+            });
+            
+            smartDispatchList.innerHTML = html;
+            openModal('smartDispatchModal');
+        }
+        
+        // 确认智能派单
+        function confirmSmartDispatch() {
+            closeModal('smartDispatchModal');
+            
+            // 显示司机通知（使用第一个订单作为示例）
+            const firstOrder = mockOrders.find(o => o.orderNo === selectedOrders[0]);
+            if (firstOrder) {
+                document.getElementById('notifyOrderNo').textContent = firstOrder.orderNo + (selectedOrders.length > 1 ? ` 等${selectedOrders.length}个订单` : '');
+                document.getElementById('notifyRoute').textContent = `${firstOrder.shipperAddress} → ${firstOrder.consigneeAddress}`;
+                document.getElementById('notifyCargo').textContent = `${firstOrder.cargoType} (${firstOrder.cargoWeight}吨)`;
+                document.getElementById('notifyVehicle').textContent = mockVehicles[0].plateNumber;
+                document.getElementById('notifyDriver').textContent = mockDrivers[0].driverName;
+                
+                openModal('notifyModal');
+            }
+            
+            // 清除选择
+            selectedOrders = [];
+            selectedVehicle = null;
+            selectedDriver = null;
+            renderOrders();
+            renderVehicles();
+            renderDrivers();
+            updateDispatchPanel();
+            
+            showToast('智能派单成功', 'success');
+        }
+        
+        // 显示路线规划
+        function showRoute(orderNo) {
+            const order = mockOrders.find(o => o.orderNo === orderNo);
+            if (!order) return;
+            
+            document.getElementById('routeStart').textContent = order.shipperAddress;
+            document.getElementById('routeEnd').textContent = order.consigneeAddress;
+            
+            const distance = Math.floor(Math.random() * 800) + 500;
+            const time = Math.floor(distance / 80);
+            
+            document.getElementById('routeDistance').textContent = distance;
+            document.getElementById('routeTime').textContent = time;
+            
+            openModal('routeModal');
+        }
+        
+        // 弹窗操作
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+        
+        // Toast提示
+        function showToast(message, type) {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type || 'info'}`;
+            toast.textContent = message;
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                padding: 12px 24px;
+                background: ${type === 'success' ? '#52c41a' : type === 'error' ? '#ff4d4f' : type === 'warning' ? '#fa8c16' : '#1890ff'};
+                color: #fff;
+                border-radius: 4px;
+                z-index: 9999;
+                animation: fadeIn 0.3s ease;
+            `;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'fadeOut 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+        
+        // 初始化
+        initPage();
+    </script>
+</body>
+</html>

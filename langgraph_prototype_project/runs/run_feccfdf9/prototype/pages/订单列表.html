@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>订单管理 - 订单列表</title>
+    <link rel="stylesheet" href="../assets/css/styles.css">
+    <style>
+        .page-container {
+            padding: 24px;
+            min-height: 100vh;
+            background: #f5f7fa;
+        }
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .page-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1f1f1f;
+        }
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+        .card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            margin-bottom: 16px;
+        }
+        .card-body {
+            padding: 20px;
+        }
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: flex-end;
+        }
+        .filter-item {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .filter-item label {
+            font-size: 13px;
+            color: #595959;
+        }
+        .filter-item .input,
+        .filter-item .select {
+            height: 36px;
+            padding: 0 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            font-size: 14px;
+            width: 160px;
+        }
+        .filter-item .input:focus,
+        .filter-item .select:focus {
+            border-color: #1890ff;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(24,144,255,0.1);
+        }
+        .filter-actions {
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+        }
+        .btn {
+            height: 36px;
+            padding: 0 20px;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .btn-primary {
+            background: #1890ff;
+            color: #fff;
+        }
+        .btn-primary:hover {
+            background: #40a9ff;
+        }
+        .btn-secondary {
+            background: #fff;
+            color: #595959;
+            border: 1px solid #d9d9d9;
+        }
+        .btn-secondary:hover {
+            border-color: #1890ff;
+            color: #1890ff;
+        }
+        .btn-ghost {
+            background: transparent;
+            color: #1890ff;
+            padding: 0 12px;
+        }
+        .btn-ghost:hover {
+            background: rgba(24,144,255,0.08);
+        }
+        .table-wrap {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        table th {
+            background: #fafafa;
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 500;
+            color: #595959;
+            border-bottom: 1px solid #e8e8e8;
+            white-space: nowrap;
+        }
+        table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #e8e8e8;
+            color: #262626;
+        }
+        table tr:hover td {
+            background: #f5f7fa;
+        }
+        table tr {
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .order-no {
+            color: #1890ff;
+            font-weight: 500;
+        }
+        .customer-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .customer-name {
+            font-weight: 500;
+        }
+        .customer-phone {
+            font-size: 12px;
+            color: #8c8c8c;
+        }
+        .transport-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .address {
+            font-size: 13px;
+            max-width: 180px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .cargo-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .cargo-name {
+            font-weight: 500;
+        }
+        .cargo-weight {
+            font-size: 12px;
+            color: #8c8c8c;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .badge-pending {
+            background: #fff7e6;
+            color: #fa8c16;
+        }
+        .badge-assigned {
+            background: #e6f7ff;
+            color: #1890ff;
+        }
+        .badge-in-transport {
+            background: #e6f7ff;
+            color: #1890ff;
+        }
+        .badge-arrived {
+            background: #e6fffb;
+            color: #13c2c2;
+        }
+        .badge-signed {
+            background: #f6ffed;
+            color: #52c41a;
+        }
+        .badge-completed {
+            background: #f6ffed;
+            color: #52c41a;
+        }
+        .badge-cancelled {
+            background: #f5f5f5;
+            color: #8c8c8c;
+        }
+        .carrier-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .vehicle-no {
+            font-weight: 500;
+        }
+        .driver-name {
+            font-size: 12px;
+            color: #8c8c8c;
+        }
+        .carrier-empty {
+            color: #bfbfbf;
+            font-size: 13px;
+        }
+        .action-cell {
+            white-space: nowrap;
+        }
+        .checkbox-cell {
+            width: 50px;
+        }
+        .checkbox-cell input {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-top: 1px solid #e8e8e8;
+        }
+        .pagination-info {
+            font-size: 14px;
+            color: #595959;
+        }
+        .pagination-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .pagination-btn {
+            width: 32px;
+            height: 32px;
+            border: 1px solid #d9d9d9;
+            background: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #595959;
+        }
+        .pagination-btn:hover:not(:disabled) {
+            border-color: #1890ff;
+            color: #1890ff;
+        }
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .pagination-num {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            border-radius: 4px;
+            cursor: pointer;
+            color: #595959;
+        }
+        .pagination-num:hover,
+        .pagination-num.active {
+            background: #1890ff;
+            color: #fff;
+        }
+        .empty-state {
+            padding: 60px 20px;
+            text-align: center;
+        }
+        .empty-icon {
+            font-size: 48px;
+            color: #d9d9d9;
+            margin-bottom: 16px;
+        }
+        .empty-text {
+            font-size: 14px;
+            color: #8c8c8c;
+            margin-bottom: 20px;
+        }
+        .loading-state {
+            padding: 60px 20px;
+            text-align: center;
+        }
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #e8e8e8;
+            border-top-color: #1890ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .toast {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 20px;
+            border-radius: 4px;
+            font-size: 14px;
+            z-index: 1000;
+            animation: slideDown 0.3s ease;
+        }
+        .toast-success {
+            background: #f6ffed;
+            border: 1px solid #b7eb8f;
+            color: #52c41a;
+        }
+        .toast-error {
+            background: #fff2f0;
+            border: 1px solid #ffccc7;
+            color: #ff4d4f;
+        }
+        .toast-warning {
+            background: #fffbe6;
+            border: 1px solid #ffe58f;
+            color: #fa8c16;
+        }
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -20px);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, 0);
+            }
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+        }
+        .modal-overlay.show {
+            display: flex;
+        }
+        .modal {
+            background: #fff;
+            border-radius: 8px;
+            width: 500px;
+            max-width: 90%;
+            animation: modalIn 0.3s ease;
+        }
+        @keyframes modalIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #e8e8e8;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f1f1f;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            color: #8c8c8c;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+        .modal-close:hover {
+            color: #595959;
+        }
+        .modal-body {
+            padding: 20px;
+        }
+        .modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid #e8e8e8;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+        .upload-area {
+            border: 2px dashed #d9d9d9;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .upload-area:hover {
+            border-color: #1890ff;
+            background: #f5f7fa;
+        }
+        .upload-icon {
+            font-size: 32px;
+            color: #1890ff;
+            margin-bottom: 12px;
+        }
+        .upload-text {
+            font-size: 14px;
+            color: #595959;
+            margin-bottom: 8px;
+        }
+        .upload-hint {
+            font-size: 12px;
+            color: #8c8c8c;
+        }
+        .batch-bar {
+            display: none;
+            padding: 12px 20px;
+            background: #e6f7ff;
+            border-radius: 4px;
+            margin-bottom: 16px;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .batch-bar.show {
+            display: flex;
+        }
+        .batch-info {
+            font-size: 14px;
+            color: #1890ff;
+        }
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #8c8c8c;
+            margin-bottom: 16px;
+        }
+        .breadcrumb a {
+            color: #1890ff;
+            text-decoration: none;
+        }
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+        .breadcrumb-sep {
+            color: #d9d9d9;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- 侧边栏 -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-icon">🚚</div>
+                <span class="brand-text">智能物流系统</span>
+            </div>
+            <nav class="nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">导航</div>
+                    <a href="首页.html" class="nav-link">首页</a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">订单管理</div>
+                    <a href="订单列表.html" class="nav-link active">订单列表</a>
+                    <a href="新建订单.html" class="nav-link">新建订单</a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">资源管理</div>
+                    <a href="车辆管理.html" class="nav-link">车辆管理</a>
+                    <a href="司机管理.html" class="nav-link">司机管理</a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">调度运输</div>
+                    <a href="智能调度.html" class="nav-link">智能调度</a>
+                    <a href="运输轨迹.html" class="nav-link">运输轨迹</a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">异常处理</div>
+                    <a href="异常处理.html" class="nav-link">异常处理</a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">数据分析</div>
+                    <a href="数据看板.html" class="nav-link">数据看板</a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">系统设置</div>
+                    <a href="系统设置.html" class="nav-link">系统设置</a>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- 主内容区 -->
+        <main class="main">
+            <!-- 顶部栏 -->
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+                </div>
+                <div class="topbar-right">
+                    <span class="user-info">
+                        <span class="user-avatar">管</span>
+                        <span class="user-name">管理人员</span>
+                    </span>
+                </div>
+            </header>
+
+            <!-- 页面内容 -->
+            <div class="content">
+                <div class="page-container">
+                    <!-- 面包屑 -->
+                    <div class="breadcrumb">
+                        <a href="首页.html">首页</a>
+                        <span class="breadcrumb-sep">/</span>
+                        <span>订单管理</span>
+                        <span class="breadcrumb-sep">/</span>
+                        <span>订单列表</span>
+                    </div>
+
+                    <!-- 页面头部 -->
+                    <div class="page-header">
+                        <h1 class="page-title">订单列表</h1>
+                        <div class="header-actions">
+                            <button class="btn btn-secondary" onclick="openImportModal()">
+                                📥 导入
+                            </button>
+                            <button class="btn btn-secondary" onclick="exportOrders()">
+                                📤 导出
+                            </button>
+                            <button class="btn btn-primary" onclick="location.href='新建订单.html'">
+                                ➕ 新建订单
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 批量操作栏 -->
+                    <div class="batch-bar" id="batchBar">
+                        <span class="batch-info">已选中 <span id="selectedCount">0</span> 个订单</span>
+                        <button class="btn btn-primary" onclick="batchDispatch()">
+                            批量派单
+                        </button>
+                    </div>
+
+                    <!-- 筛选卡片 -->
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="filter-bar">
+                                <div class="filter-item">
+                                    <label>订单状态</label>
+                                    <select class="select" id="statusFilter" onchange="applyFilters()">
+                                        <option value="">全部</option>
+                                        <option value="PENDING">待派单</option>
+                                        <option value="ASSIGNED">已派单</option>
+                                        <option value="IN_TRANSPORT">运输中</option>
+                                        <option value="ARRIVED">已到达</option>
+                                        <option value="SIGNED">已签收</option>
+                                        <option value="COMPLETED">已完成</option>
+                                        <option value="CANCELLED">已取消</option>
+                                    </select>
+                                </div>
+                                <div class="filter-item">
+                                    <label>创建时间</label>
+                                    <div style="display: flex; gap: 8px;">
+                                        <input type="date" class="input" id="startTime" style="width: 140px;">
+                                        <span style="align-self: center; color: #8c8c8c;">至</span>
+                                        <input type="date" class="input" id="endTime" style="width: 140px;">
+                                    </div>
+                                </div>
+                                <div class="filter-item">
+                                    <label>搜索</label>
+                                    <input type="text" class="input" id="searchInput" placeholder="订单号/客户名称/地址" style="width: 200px;">
+                                </div>
+                                <div class="filter-actions">
+                                    <button class="btn btn-primary" onclick="applyFilters()">🔍 搜索</button>
+                                    <button class="btn btn-ghost" onclick="resetFilters()">重置</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 订单表格 -->
+                    <div class="card">
+                        <div class="table-wrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th class="checkbox-cell">
+                                            <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                                        </th>
+                                        <th>订单号</th>
+                                        <th>客户信息</th>
+                                        <th>运输信息</th>
+                                        <th>货物信息</th>
+                                        <th>期望送达</th>
+                                        <th>订单状态</th>
+                                        <th>承运信息</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="orderTableBody">
+                                    <!-- 订单数据将通过JS动态渲染 -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- 空状态 -->
+                        <div class="empty-state" id="emptyState" style="display: none;">
+                            <div class="empty-icon">📦</div>
+                            <div class="empty-text">暂无符合条件的订单</div>
+                            <button class="btn btn-primary" onclick="location.href='新建订单.html'">
+                                新建订单
+                            </button>
+                        </div>
+
+                        <!-- 加载状态 -->
+                        <div class="loading-state" id="loadingState">
+                            <div class="loading-spinner"></div>
+                            <div style="color: #8c8c8c;">数据加载中...</div>
+                        </div>
+
+                        <!-- 分页 -->
+                        <div class="pagination" id="pagination">
+                            <div class="pagination-info">
+                                共 <span id="totalCount">0</span> 条记录，第 <span id="currentPage">1</span>/<span id="totalPages">1</span> 页
+                            </div>
+                            <div class="pagination-controls">
+                                <button class="pagination-btn" id="prevBtn" onclick="prevPage()" disabled>‹</button>
+                                <div id="pageNumbers"></div>
+                                <button class="pagination-btn" id="nextBtn" onclick="nextPage()" disabled>›</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 导入弹窗 -->
+    <div class="modal-overlay" id="importModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">导入订单</h3>
+                <button class="modal-close" onclick="closeImportModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">点击或拖拽文件到此处上传</div>
+                    <div class="upload-hint">支持 .xls 和 .xlsx 格式，文件大小不超过2MB</div>
+                    <input type="file" id="fileInput" style="display: none;" accept=".xls,.xlsx" onchange="handleFileSelect(event)">
+                </div>
+                <div style="margin-top: 16px; text-align: center;">
+                    <a href="#" style="color: #1890ff; font-size: 14px;">下载导入模板</a>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeImportModal()">取消</button>
+                <button class="btn btn-primary" onclick="confirmImport()">确认导入</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../assets/js/mock-data.js"></script>
+    <script src="../assets/js/app.js"></script>
+    <script>
+        // 订单数据（从mock-data获取或使用本地数据）
+        let orders = [];
+        let filteredOrders = [];
+        let currentPage = 1;
+        let pageSize = 10;
+        let selectedOrders = [];
+
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadOrders();
+            setCurrentMenuActive();
+        });
+
+        // 加载订单数据
+        function loadOrders() {
+            // 模拟API加载延迟
+            setTimeout(function() {
+                orders = mockOrders || [];
+                filteredOrders = [...orders];
+                renderOrders();
+                document.getElementById('loadingState').style.display = 'none';
+            }, 500);
+        }
+
+        // 渲染订单列表
+        function renderOrders() {
+            const tbody = document.getElementById('orderTableBody');
+            const emptyState = document.getElementById('emptyState');
+            const pagination = document.getElementById('pagination');
+            
+            // 计算分页
+            const start = (currentPage - 1) * pageSize;
+            const end = start + pageSize;
+            const pageData = filteredOrders.slice(start, end);
+
+            if (pageData.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.style.display = 'block';
+                pagination.style.display = 'none';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            pagination.style.display = 'flex';
+
+            tbody.innerHTML = pageData.map(function(order) {
+                const statusBadge = getStatusBadge(order.status);
+                const carrierInfo = order.assignedVehicle 
+                    ? `<div class="carrier-info">
+                        <span class="vehicle-no">${order.assignedVehicle}</span>
+                        <span class="driver-name">${order.assignedDriver || ''}</span>
+                       </div>`
+                    : '<span class="carrier-empty">待派单</span>';
+
+                const isChecked = selectedOrders.includes(order.orderNo) ? 'checked' : '';
+
+                return `<tr onclick="viewOrderDetail('${order.orderNo}')" data-order-no="${order.orderNo}">
+                    <td class="checkbox-cell" onclick="event.stopPropagation()">
+                        <input type="checkbox" ${isChecked} onchange="toggleSelect('${order.orderNo}')">
+                    </td>
+                    <td><span class="order-no">${order.orderNo}</span></td>
+                    <td>
+                        <div class="customer-info">
+                            <span class="customer-name">${order.customerName}</span>
+                            <span class="customer-phone">${order.customerPhone}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="transport-info">
+                            <span class="address">${order.senderAddress}</span>
+                            <span style="color: #8c8c8c; font-size: 12px;">→</span>
+                            <span class="address">${order.receiverAddress}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="cargo-info">
+                            <span class="cargo-name">${order.cargoName}</span>
+                            <span class="cargo-weight">${order.cargoWeight}kg</span>
+                        </div>
+                    </td>
+                    <td>${formatDateTime(order.expectedTime)}</td>
+                    <td>${statusBadge}</td>
+                    <td>${carrierInfo}</td>
+                    <td class="action-cell" onclick="event.stopPropagation()">
+                        <button class="btn btn-ghost" onclick="viewOrderDetail('${order.orderNo}')">查看详情</button>
+                    </td>
+                </tr>`;
+            }).join('');
+
+            // 更新分页信息
+            updatePagination();
+        }
+
+        // 获取状态标签
+        function getStatusBadge(status) {
+            const statusMap = {
+                'PENDING': { text: '待派单', class: 'badge-pending' },
+                'ASSIGNED': { text: '已派单', class: 'badge-assigned' },
+                'IN_TRANSPORT': { text: '运输中', class: 'badge-in-transport' },
+                'ARRIVED': { text: '已到达', class: 'badge-arrived' },
+                'SIGNED': { text: '已签收', class: 'badge-signed' },
+                'COMPLETED': { text: '已完成', class: 'badge-completed' },
+                'CANCELLED': { text: '已取消', class: 'badge-cancelled' }
+            };
+            const info = statusMap[status] || { text: status, class: '' };
+            return `<span class="badge ${info.class}">${info.text}</span>`;
+        }
+
+        // 格式化日期时间
+        function formatDateTime(dateStr) {
+            if (!dateStr) return '-';
+            const date = new Date(dateStr);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day} ${hours}:${minutes}`;
+        }
+
+        // 更新分页
+        function updatePagination() {
+            const total = filteredOrders.length;
+            const totalPages = Math.ceil(total / pageSize);
+            
+            document.getElementById('totalCount').textContent = total;
+            document.getElementById('currentPage').textContent = currentPage;
+            document.getElementById('totalPages').textContent = totalPages;
+
+            // 更新按钮状态
+            document.getElementById('prevBtn').disabled = currentPage <= 1;
+            document.getElementById('nextBtn').disabled = currentPage >= totalPages;
+
+            // 生成分页数字
+            const pageNumbers = document.getElementById('pageNumbers');
+            let pagesHtml = '';
+            for (let i = 1; i <= totalPages; i++) {
+                pagesHtml += `<button class="pagination-num ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+            }
+            pageNumbers.innerHTML = pagesHtml;
+        }
+
+        // 翻页函数
+        function prevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                renderOrders();
+            }
+        }
+
+        function nextPage() {
+            const totalPages = Math.ceil(filteredOrders.length / pageSize);
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderOrders();
+            }
+        }
+
+        function goToPage(page) {
+            currentPage = page;
+            renderOrders();
+        }
+
+        // 应用筛选
+        function applyFilters() {
+            const status = document.getElementById('statusFilter').value;
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
+            const search = document.getElementById('searchInput').value.trim();
+
+            filteredOrders = orders.filter(function(order) {
+                // 状态筛选
+                if (status && order.status !== status) {
+                    return false;
+                }
+
+                // 时间筛选
+                if (startTime) {
+                    const orderTime = new Date(order.createTime);
+                    const start = new Date(startTime);
+                    if (orderTime < start) {
+                        return false;
+                    }
+                }
+                if (endTime) {
+                    const orderTime = new Date(order.createTime);
+                    const end = new Date(endTime);
+                    end.setHours(23, 59, 59);
+                    if (orderTime > end) {
+                        return false;
+                    }
+                }
+
+                // 搜索筛选
+                if (search) {
+                    const searchLower = search.toLowerCase();
+                    const matchOrderNo = order.orderNo.toLowerCase().includes(searchLower);
+                    const matchCustomer = order.customerName.toLowerCase().includes(searchLower);
+                    const matchSender = order.senderAddress.toLowerCase().includes(searchLower);
+                    const matchReceiver = order.receiverAddress.toLowerCase().includes(searchLower);
+                    if (!matchOrderNo && !matchCustomer && !matchSender && !matchReceiver) {
+                        return false;
+                    }
+                }
+
+                return true;
+            });
+
+            currentPage = 1;
+            renderOrders();
+
+            if (filteredOrders.length === 0) {
+                showToast('未找到匹配订单', 'warning');
+            } else {
+                showToast('搜索完成', 'success');
+            }
+        }
+
+        // 重置筛选
+        function resetFilters() {
+            document.getElementById('statusFilter').value = '';
+            document.getElementById('startTime').value = '';
+            document.getElementById('endTime').value = '';
+            document.getElementById('searchInput').value = '';
+            filteredOrders = [...orders];
+            currentPage = 1;
+            renderOrders();
+            showToast('筛选已重置', 'success');
+        }
+
+        // 选择/取消选择订单
+        function toggleSelect(orderNo) {
+            const index = selectedOrders.indexOf(orderNo);
+            if (index > -1) {
+                selectedOrders.splice(index, 1);
+            } else {
+                selectedOrders.push(orderNo);
+            }
+            updateBatchBar();
+        }
+
+        // 全选/取消全选
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('selectAll').checked;
+            const checkboxes = document.querySelectorAll('#orderTableBody input[type="checkbox"]');
+            
+            if (selectAll) {
+                const start = (currentPage - 1) * pageSize;
+                const end = start + pageSize;
+                const pageData = filteredOrders.slice(start, end);
+                pageData.forEach(function(order) {
+                    if (!selectedOrders.includes(order.orderNo)) {
+                        selectedOrders.push(order.orderNo);
+                    }
+                });
+            } else {
+                const start = (currentPage - 1) * pageSize;
+                const end = start + pageSize;
+                const pageData = filteredOrders.slice(start, end);
+                pageData.forEach(function(order) {
+                    const index = selectedOrders.indexOf(order.orderNo);
+                    if (index > -1) {
+                        selectedOrders.splice(index, 1);
+                    }
+                });
+            }
+            
+            // 更新所有复选框状态
+            checkboxes.forEach(function(cb) {
+                cb.checked = selectAll;
+            });
+            
+            updateBatchBar();
+        }
+
+        // 更新批量操作栏
+        function updateBatchBar() {
+            const batchBar = document.getElementById('batchBar');
+            const count = selectedOrders.length;
+            document.getElementById('selectedCount').textContent = count;
+            
+            if (count > 0) {
+                batchBar.classList.add('show');
+            } else {
+                batchBar.classList.remove('show');
+            }
+
+            // 更新全选复选框状态
+            const start = (currentPage - 1) * pageSize;
+            const end = start + pageSize;
+            const pageData = filteredOrders.slice(start, end);
+            const allSelected = pageData.every(function(order) {
+                return selectedOrders.includes(order.orderNo);
+            });
+            document.getElementById('selectAll').checked = allSelected && pageData.length > 0;
+        }
+
+        // 批量派单
+        function batchDispatch() {
+            if (selectedOrders.length === 0) {
+                showToast('请先选择订单', 'warning');
+                return;
+            }
+            showToast(`已选中${selectedOrders.length}个订单，正在跳转到智能调度页面...`, 'success');
+            setTimeout(function() {
+                location.href = '智能调度.html';
+            }, 1000);
+        }
+
+        // 查看订单详情
+        function viewOrderDetail(orderNo) {
+            location.href = '订单详情.html?id=' + orderNo;
+        }
+
+        // 导入弹窗
+        function openImportModal() {
+            document.getElementById('importModal').classList.add('show');
+        }
+
+        function closeImportModal() {
+            document.getElementById('importModal').classList.remove('show');
+            document.getElementById('fileInput').value = '';
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                showToast('已选择文件: ' + file.name, 'success');
+            }
+        }
+
+        function confirmImport() {
+            const fileInput = document.getElementById('fileInput');
+            if (!fileInput.files[0]) {
+                showToast('请先选择要导入的文件', 'warning');
+                return;
+            }
+            
+            showToast('订单导入成功，共导入 15 条', 'success');
+            closeImportModal();
+            loadOrders();
+        }
+
+        // 导出订单
+        function exportOrders() {
+            showToast('订单导出成功', 'success');
+        }
+
+        // 设置当前菜单高亮
+        function setCurrentMenuActive() {
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(function(link) {
+                if (link.getAttribute('href') === '订单列表.html') {
+                    link.classList.add('active');
+                } else {
+                    link.classList.remove('active');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

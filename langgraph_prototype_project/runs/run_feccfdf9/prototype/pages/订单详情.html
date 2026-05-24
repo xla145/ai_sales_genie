@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>订单管理 - 订单详情</title>
+    <link rel="stylesheet" href="../assets/css/styles.css">
+    <style>
+        /* 页面特定样式 */
+        .detail-page {
+            display: flex;
+            flex-direction: column;
+            min-height: calc(100vh - 120px);
+            background: #f5f7fa;
+        }
+        
+        /* 顶部区域 */
+        .detail-header {
+            background: #fff;
+            padding: 20px 24px;
+            border-bottom: 1px solid #e8e8e8;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .detail-header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .order-no {
+            font-size: 20px;
+            font-weight: 600;
+            color: #262626;
+        }
+        
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .status-pending {
+            background: #fff7e6;
+            color: #fa8c16;
+            border: 1px solid #ffd591;
+        }
+        
+        .status-assigned {
+            background: #e6f7ff;
+            color: #1890ff;
+            border: 1px solid #91d5ff;
+        }
+        
+        .status-in-transport {
+            background: #e6f7ff;
+            color: #1890ff;
+            border: 1px solid #91d5ff;
+        }
+        
+        .status-arrived {
+            background: #e6fffb;
+            color: #13c2c2;
+            border: 1px solid #87e8de;
+        }
+        
+        .status-signed,
+        .status-completed {
+            background: #f6ffed;
+            color: #52c41a;
+            border: 1px solid #b7eb8f;
+        }
+        
+        .status-cancelled {
+            background: #f5f5f5;
+            color: #8c8c8c;
+            border: 1px solid #d9d9d9;
+        }
+        
+        .operation-buttons {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 400;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+        
+        .btn-primary {
+            background: #1890ff;
+            color: #fff;
+        }
+        
+        .btn-primary:hover {
+            background: #40a9ff;
+        }
+        
+        .btn-secondary {
+            background: #fff;
+            color: #595959;
+            border: 1px solid #d9d9d9;
+        }
+        
+        .btn-secondary:hover {
+            border-color: #40a9ff;
+            color: #40a9ff;
+        }
+        
+        .btn-success {
+            background: #52c41a;
+            color: #fff;
+        }
+        
+        .btn-success:hover {
+            background: #73d13d;
+        }
+        
+        .btn-danger {
+            background: #ff4d4f;
+            color: #fff;
+        }
+        
+        .btn-danger:hover {
+            background: #ff7875;
+        }
+        
+        .btn-ghost {
+            background: transparent;
+            color: #1890ff;
+            border: none;
+        }
+        
+        .btn-ghost:hover {
+            color: #40a9ff;
+            background: rgba(24, 144, 255, 0.1);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* Tab区域 */
+        .tab-nav {
+            background: #fff;
+            padding: 0 24px;
+            border-bottom: 1px solid #e8e8e8;
+            display: flex;
+        }
+        
+        .tab-item {
+            padding: 14px 20px;
+            font-size: 14px;
+            color: #595959;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .tab-item:hover {
+            color: #1890ff;
+        }
+        
+        .tab-item.active {
+            color: #1890ff;
+            border-bottom-color: #1890ff;
+            font-weight: 500;
+        }
+        
+        /* 内容区域 */
+        .detail-content {
+            flex: 1;
+            padding: 24px;
+        }
+        
+        .tab-panel {
+            display: none;
+        }
+        
+        .tab-panel.active {
+            display: block;
+        }
+        
+        /* 基本信息 */
+        .info-card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+        }
+        
+        .card-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: #262626;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f0f0f0;
+            margin-bottom: 16px;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+        
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .info-label {
+            font-size: 13px;
+            color: #8c8c8c;
+        }
+        
+        .info-value {
+            font-size: 14px;
+            color: #262626;
+        }
+        
+        .info-value.highlight {
+            font-weight: 600;
+            color: #1890ff;
+            font-size: 18px;
+        }
+        
+        .info-section-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #262626;
+            margin: 20px 0 12px 0;
+            padding-left: 12px;
+            border-left: 3px solid #1890ff;
+        }
+        
+        /* 运输信息 */
+        .transport-resource {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 16px;
+        }
+        
+        .resource-card {
+            flex: 1;
+            background: #fafafa;
+            border-radius: 8px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .resource-card:hover {
+            background: #f0f7ff;
+        }
+        
+        .resource-card-title {
+            font-size: 13px;
+            color: #8c8c8c;
+            margin-bottom: 8px;
+        }
+        
+        .resource-card-value {
+            font-size: 16px;
+            font-weight: 500;
+            color: #262626;
+        }
+        
+        .resource-card-sub {
+            font-size: 13px;
+            color: #8c8c8c;
+            margin-top: 4px;
+        }
+        
+        /* 轨迹信息 */
+        .track-container {
+            display: flex;
+            gap: 24px;
+        }
+        
+        .track-map {
+            flex: 2;
+            background: #fff;
+            border-radius: 8px;
+            height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .map-placeholder {
+            text-align: center;
+            color: #8c8c8c;
+        }
+        
+        .map-placeholder-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+        
+        .map-route {
+            position: absolute;
+            width: 80%;
+            height: 80%;
+        }
+        
+        .route-line {
+            stroke: #1890ff;
+            stroke-width: 3;
+            fill: none;
+        }
+        
+        .route-point {
+            fill: #fff;
+            stroke-width: 2;
+        }
+        
+        .route-point.start {
+            fill: #52c41a;
+            stroke: #52c41a;
+        }
+        
+        .route-point.end {
+            fill: #ff4d4f;
+            stroke: #ff4d4f;
+        }
+        
+        .route-point.current {
+            fill: #1890ff;
+            stroke: #1890ff;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { r: 6; }
+            50% { r: 10; }
+        }
+        
+        .route-label {
+            font-size: 12px;
+            fill: #595959;
+        }
+        
+        .track-timeline {
+            flex: 1;
+            background: #fff;
+            border-radius: 8px;
+            padding: 16px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .timeline-item {
+            display: flex;
+            gap: 12px;
+            padding-bottom: 20px;
+            position: relative;
+        }
+        
+        .timeline-item:not(:last-child)::before {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 16px;
+            bottom: 0;
+            width: 2px;
+            background: #e8e8e8;
+        }
+        
+        .timeline-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #1890ff;
+            flex-shrink: 0;
+            margin-top: 4px;
+        }
+        
+        .timeline-dot.start {
+            background: #52c41a;
+        }
+        
+        .timeline-dot.end {
+            background: #ff4d4f;
+        }
+        
+        .timeline-content {
+            flex: 1;
+        }
+        
+        .timeline-time {
+            font-size: 13px;
+            color: #8c8c8c;
+            margin-bottom: 4px;
+        }
+        
+        .timeline-title {
+            font-size: 14px;
+            color: #262626;
+            font-weight: 500;
+        }
+        
+        .timeline-desc {
+            font-size: 13px;
+            color: #595959;
+            margin-top: 4px;
+        }
+        
+        /* 日志列表 */
+        .log-table {
+            width: 100%;
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .log-table th,
+        .log-table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .log-table th {
+            background: #fafafa;
+            font-weight: 500;
+            color: #595959;
+            font-size: 13px;
+        }
+        
+        .log-table td {
+            font-size: 14px;
+            color: #262626;
+        }
+        
+        .log-table tr:hover {
+            background: #fafafa;
+        }
+        
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #8c8c8c;
+        }
+        
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        
+        .empty-state-text {
+            font-size: 14px;
+        }
+        
+        /* 底部区域 */
+        .detail-footer {
+            background: #fff;
+            padding: 16px 24px;
+            border-top: 1px solid #e8e8e8;
+            display: flex;
+            justify-content: center;
+        }
+        
+        /* 弹窗 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .modal-overlay.active {
+            display: flex;
+        }
+        
+        .modal {
+            background: #fff;
+            border-radius: 8px;
+            width: 500px;
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #e8e8e8;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: #262626;
+        }
+        
+        .modal-close {
+            font-size: 20px;
+            color: #8c8c8c;
+            cursor: pointer;
+            line-height: 1;
+        }
+        
+        .modal-close:hover {
+            color: #262626;
+        }
+        
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        
+        .modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid #e8e8e8;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+        
+        /* 表单 */
+        .form-field {
+            margin-bottom: 16px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            color: #262626;
+            margin-bottom: 6px;
+        }
+        
+        .form-label .required {
+            color: #ff4d4f;
+            margin-right: 4px;
+        }
+        
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: #40a9ff;
+            box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+        }
+        
+        .form-textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        
+        .upload-area {
+            border: 2px dashed #d9d9d9;
+            border-radius: 4px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .upload-area:hover {
+            border-color: #40a9ff;
+            background: #fafafa;
+        }
+        
+        .upload-icon {
+            font-size: 24px;
+            color: #8c8c8c;
+            margin-bottom: 8px;
+        }
+        
+        .upload-text {
+            font-size: 14px;
+            color: #595959;
+        }
+        
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 20px;
+            border-radius: 4px;
+            font-size: 14px;
+            z-index: 2000;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .toast.active {
+            display: block;
+        }
+        
+        .toast-success {
+            background: #f6ffed;
+            color: #52c41a;
+            border: 1px solid #b7eb8f;
+        }
+        
+        .toast-error {
+            background: #fff2f0;
+            color: #ff4d4f;
+            border: 1px solid #ffccc7;
+        }
+        
+        .toast-warning {
+            background: #fff7e6;
+            color: #fa8c16;
+            border: 1px solid #ffd591;
+        }
+        
+        /* 确认框 */
+        .confirm-dialog {
+            text-align: center;
+        }
+        
+        .confirm-icon {
+            font-size: 48px;
+            color: #faad14;
+            margin-bottom: 16px;
+        }
+        
+        .confirm-message {
+            font-size: 14px;
+            color: #595959;
+            margin-bottom: 8px;
+        }
+        
+        .confirm-danger .confirm-icon {
+            color: #ff4d4f;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- 侧边栏 -->
+        <aside class="sidebar">
+            <div class="brand">
+                <span class="brand-icon">🚛</span>
+                <span class="brand-text">智能物流系统</span>
+            </div>
+            <nav class="nav">
+                <div class="nav-section">
+                    <a href="首页.html" class="nav-link">首页</a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">订单管理</div>
+                    <a href="订单列表.html" class="nav-link">订单列表</a>
+                    <a href="新建订单.html" class="nav-link">新建订单</a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">资源管理</div>
+                    <a href="车辆管理.html" class="nav-link">车辆管理</a>
+                    <a href="司机管理.html" class="nav-link">司机管理</a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">运输管理</div>
+                    <a href="智能调度.html" class="nav-link">智能调度</a>
+                    <a href="运输轨迹.html" class="nav-link">运输轨迹</a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">异常管理</div>
+                    <a href="异常处理.html" class="nav-link">异常处理</a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">数据统计</div>
+                    <a href="数据看板.html" class="nav-link">数据看板</a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">系统</div>
+                    <a href="系统设置.html" class="nav-link">系统设置</a>
+                </div>
+            </nav>
+        </aside>
+        
+        <!-- 主体区域 -->
+        <main class="main">
+            <!-- 顶部栏 -->
+            <header class="topbar">
+                <div class="breadcrumb">
+                    <a href="订单列表.html">订单管理</a>
+                    <span class="separator">/</span>
+                    <span class="current">订单详情</span>
+                </div>
+                <div class="user-info">
+                    <span class="user-name">调度员 李姐</span>
+                    <span class="user-avatar">李</span>
+                </div>
+            </header>
+            
+            <!-- 页面内容 -->
+            <div class="content">
+                <div class="detail-page">
+                    <!-- 顶部区域 -->
+                    <div class="detail-header">
+                        <div class="detail-header-left">
+                            <span class="order-no">LOG202401150001</span>
+                            <span class="status-badge status-in-transport" id="orderStatus">运输中</span>
+                        </div>
+                        <div class="operation-buttons" id="operationButtons">
+                            <!-- 按钮将由JS根据状态动态生成 -->
+                        </div>
+                    </div>
+                    
+                    <!-- Tab导航 -->
+                    <div class="tab-nav">
+                        <div class="tab-item active" data-tab="basic">基本信息</div>
+                        <div class="tab-item" data-tab="transport" id="transportTab">运输信息</div>
+                        <div class="tab-item" data-tab="track" id="trackTab">轨迹信息</div>
+                        <div class="tab-item" data-tab="logs">操作日志</div>
+                    </div>
+                    
+                    <!-- 内容区域 -->
+                    <div class="detail-content">
+                        <!-- 基本信息 -->
+                        <div class="tab-panel active" id="basicPanel">
+                            <div class="info-card">
+                                <div class="card-title">订单信息</div>
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <span class="info-label">订单编号</span>
+                                        <span class="info-value">LOG202401150001</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">订单状态</span>
+                                        <span class="info-value"><span class="status-badge status-in-transport">运输中</span></span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">创建时间</span>
+                                        <span class="info-value">2024-01-15 09:30:00</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">期望送达时间</span>
+                                        <span class="info-value">2024-01-15 18:00</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="info-card">
+                                <div class="card-title">发货方信息</div>
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <span class="info-label">发货人姓名</span>
+                                        <span class="info-value">张三</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">发货人电话</span>
+                                        <span class="info-value">13800138001</span>
+                                    </div>
+                                    <div class="info-item" style="grid-column: span 2;">
+                                        <span class="info-label">发货地址</span>
+                                        <span class="info-value">北京市朝阳区光华路10号物流园A区</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="info-card">
+                                <div class="card-title">收货方信息</div>
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <span class="info-label">收货人姓名</span>
+                                        <span class="info-value">李四</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">收货人电话</span>
+                                        <span class="info-value">13900139001</span>
+                                    </div>
+                                    <div class="info-item" style="grid-column: span 2;">
+                                        <span class="info-label">收货地址</span>
+                                        <span class="info-value">天津市滨海新区港城大道88号</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="info-card">
+                                <div class="card-title">货物信息</div>
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <span class="info-label">货物名称</span>
+                                        <span class="info-value">电子产品</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">货物类型</span>
+                                        <span class="info-value">电子产品</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">货物重量</span>
+                                        <span class="info-value">500 kg</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">货物体积</span>
+                                        <span class="info-value">5 m³</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">货物数量</span>
+                                        <span class="info-value">20 件</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">货物价值</span>
+                                        <span class="info-value">¥100,000</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">包装类型</span>
+                                        <span class="info-value">纸箱</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">货物备注</span>
+                                        <span class="info-value">易碎品，轻拿轻放</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="info-card">
+                                <div class="card-title">费用信息</div>
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <span class="info-label">运费</span>
+                                        <span class="info-value">¥800</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">装卸费</span>
+                                        <span class="info-value">¥100</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">保险费</span>
+                                        <span class="info-value">¥50</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">其他费用</span>
+                                        <span class="info-value">¥0</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">费用合计</span>
+                                        <span class="info-value highlight">¥950</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">支付状态</span>
+                                        <span class="info-value"><span class="status-badge status-completed">已支付</span></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 运输信息 -->
+                        <div class="tab-panel" id="transportPanel">
+                            <div class="info-card">
+                                <div class="card-title">运输资源</div>
+                                <div class="transport-resource">
+                                    <div class="resource-card" onclick="alert('跳转到车辆详情页：V001'); location.href='车辆管理.html';">
+                                        <div class="resource-card-title">车牌号</div>
+                                        <div class="resource-card-value">京A12345</div>
+                                        <div class="resource-card-sub">厢式货车 · 载重 2000kg</div>
+                                    </div>
+                                    <div class="resource-card" onclick="alert('跳转到司机详情页：D001'); location.href='司机管理.html';">
+                                        <div class="resource-card-title">司机</div>
+                                        <div class="resource-card-value">王师傅</div>
+                                        <div class="resource-card-sub">13700137001</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="info-card">
+                                <div class="card-title">运输时间</div>
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <span class="info-label">派单时间</span>
+                                        <span class="info-value">2024-01-15 10:00:00</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">开始运输时间</span>
+                                        <span class="info-value">2024-01-15 10:30:00</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">预计到达时间</span>
+                                        <span class="info-value">2024-01-15 14:00</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="info-card">
+                                <div class="card-title">路线信息</div>
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <span class="info-label">路线距离</span>
+                                        <span class="info-value">120 km</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">预计时长</span>
+                                        <span class="info-value">210 分钟</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 轨迹信息 -->
+                        <div class="tab-panel" id="trackPanel">
+                            <div class="track-container">
+                                <div class="track-map">
+                                    <div class="map-placeholder">
+                                        <div class="map-placeholder-icon">🗺️</div>
+                                        <div>地图展示区域</div>
+                                        <div style="font-size: 12px; margin-top: 8px; color: #8c8c8c;">(模拟地图：高德/百度地图API占位)</div>
+                                    </div>
+                                    <svg class="map-route" viewBox="0 0 400 300">
+                                        <!-- 路线 -->
+                                        <path class="route-line" d="M 50 250 Q 150 200, 200 150 T 350 50" />
+                                        <!-- 起点 -->
+                                        <circle class="route-point start" cx="50" cy="250" r="8" />
+                                        <text class="route-label" x="50" y="275" text-anchor="middle">北京</text>
+                                        <!-- 途经点1 -->
+                                        <circle class="route-point" cx="150" cy="180" r="5" />
+                                        <!-- 途经点2 -->
+                                        <circle class="route-point" cx="250" cy="100" r="5" />
+                                        <!-- 当前位置 -->
+                                        <circle class="route-point current" cx="300" cy="70" r="8" />
+                                        <text class="route-label" x="300" y="55" text-anchor="middle">当前位置</text>
+                                        <!-- 终点 -->
+                                        <circle class="route-point end" cx="350" cy="50" r="8" />
+                                        <text class="route-label" x="350" y="35" text-anchor="middle">天津</text>
+                                    </svg>
+                                </div>
+                                <div class="track-timeline">
+                                    <div class="timeline-item">
+                                        <div class="timeline-dot start"></div>
+                                        <div class="timeline-content">
+                                            <div class="timeline-time">2024-01-15 10:30</div>
+                                            <div class="timeline-title">开始运输</div>
+                                            <div class="timeline-desc">司机确认开始运输</div>
+                                        </div>
+                                    </div>
+                                    <div class="timeline-item">
+                                        <div class="timeline-dot"></div>
+                                        <div class="timeline-content">
+                                            <div class="timeline-time">2024-01-15 11:00</div>
+                                            <div class="timeline-title">途经通州</div>
+                                            <div class="timeline-desc">已通过通州区域</div>
+                                        </div>
+                                    </div>
+                                    <div class="timeline-item">
+                                        <div class="timeline-dot"></div>
+                                        <div class="timeline-content">
+                                            <div class="timeline-time">2024-01-15 11:30</div>
+                                            <div class="timeline-title">途经武清</div>
+                                            <div class="timeline-desc">已通过武清区域</div>
+                                        </div>
+                                    </div>
+                                    <div class="timeline-item">
+                                        <div class="timeline-dot"></div>
+                                        <div class="timeline-content">
+                                            <div class="timeline-time">2024-01-15 12:00</div>
+                                            <div class="timeline-title">实时位置</div>
+                                            <div class="timeline-desc">距离目的地约50km</div>
+                                        </div>
+                                    </div>
+                                    <div class="timeline-item">
+                                        <div class="timeline-dot end"></div>
+                                        <div class="timeline-content">
+                                            <div class="timeline-time">预计 14:00</div>
+                                            <div class="timeline-title">预计到达</div>
+                                            <div class="timeline-desc">天津市滨海新区港城大道88号</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 操作日志 -->
+                        <div class="tab-panel" id="logsPanel">
+                            <div class="info-card" style="padding: 0;">
+                                <table class="log-table">
+                                    <thead>
+                                        <tr>
+                                            <th>时间</th>
+                                            <th>操作人</th>
+                                            <th>操作类型</th>
+                                            <th>操作内容</th>
+                                            <th>IP地址</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>2024-01-15 10:30:00</td>
+                                            <td>司机王师傅</td>
+                                            <td>开始运输</td>
+                                            <td>确认开始运输</td>
+                                            <td>192.168.1.101</td>
+                                        </tr>
+                                        <tr>
+                                            <td>2024-01-15 10:00:00</td>
+                                            <td>调度员李姐</td>
+                                            <td>派单</td>
+                                            <td>派单给车辆京A12345、司机王师傅</td>
+                                            <td>192.168.1.100</td>
+                                        </tr>
+                                        <tr>
+                                            <td>2024-01-15 09:35:00</td>
+                                            <td>系统</td>
+                                            <td>支付</td>
+                                            <td>订单支付成功</td>
+                                            <td>-</td>
+                                        </tr>
+                                        <tr>
+                                            <td>2024-01-15 09:30:00</td>
+                                            <td>运营人员小张</td>
+                                            <td>创建订单</td>
+                                            <td>创建订单LOG202401150001</td>
+                                            <td>192.168.1.102</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 底部区域 -->
+                    <div class="detail-footer">
+                        <a href="订单列表.html" class="btn btn-secondary">返回订单列表</a>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- 签收弹窗 -->
+    <div class="modal-overlay" id="signModal">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title">签收确认</span>
+                <span class="modal-close" onclick="closeModal('signModal')">×</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-field">
+                    <label class="form-label"><span class="required">*</span>签收人姓名</label>
+                    <input type="text" class="form-input" id="signName" placeholder="请输入签收人姓名">
+                </div>
+                <div class="form-field">
+                    <label class="form-label">签收备注</label>
+                    <textarea class="form-textarea" id="signRemark" placeholder="请输入签收备注"></textarea>
+                </div>
+                <div class="form-field">
+                    <label class="form-label">签收照片</label>
+                    <div class="upload-area" onclick="showToast('图片上传功能模拟中', 'warning')">
+                        <div class="upload-icon">📷</div>
+                        <div class="upload-text">点击上传签收照片</div>
+                    </div>
+                </div>
+                <div class="form-field">
+                    <label class="form-label">回单图片</label>
+                    <div class="upload-area" onclick="showToast('图片上传功能模拟中', 'warning')">
+                        <div class="upload-icon">📄</div>
+                        <div class="upload-text">点击上传回单图片</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('signModal')">取消</button>
+                <button class="btn btn-success" onclick="submitSign()">确认签收</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 取消确认弹窗 -->
+    <div class="modal-overlay" id="cancelModal">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title">取消订单</span>
+                <span class="modal-close" onclick="closeModal('cancelModal')">×</span>
+            </div>
+            <div class="modal-body">
+                <div class="confirm-dialog">
+                    <div class="confirm-icon">⚠️</div>
+                    <div class="confirm-message">确定要取消此订单吗？</div>
+                    <div style="font-size: 13px; color: #8c8c8c; margin-bottom: 16px;">取消后订单将无法恢复</div>
+                </div>
+                <div class="form-field">
+                    <label class="form-label"><span class="required">*</span>取消原因</label>
+                    <textarea class="form-textarea" id="cancelReason" placeholder="请输入取消原因"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('cancelModal')">返回</button>
+                <button class="btn btn-danger" onclick="submitCancel()">确认取消</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 派单弹窗 -->
+    <div class="modal-overlay" id="dispatchModal">
+        <div class="modal" style="width: 600px;">
+            <div class="modal-header">
+                <span class="modal-title">智能派单</span>
+                <span class="modal-close" onclick="closeModal('dispatchModal')">×</span>
+            </div>
+            <div class="modal-body">
+                <div class="info-card">
+                    <div class="card-title">推荐方案</div>
+                    <div class="transport-resource">
+                        <div class="resource-card" style="flex: 1;">
+                            <div class="resource-card-title">推荐车辆</div>
+                            <div class="resource-card-value">京A12345</div>
+                            <div class="resource-card-sub">厢式货车 · 载重2000kg · 空闲</div>
+                        </div>
+                        <div class="resource-card" style="flex: 1;">
+                            <div class="resource-card-title">推荐司机</div>
+                            <div class="resource-card-value">王师傅</div>
+                            <div class="resource-card-sub">驾龄10年 · 好评99%</div>
+                        </div>
+                    </div>
+                    <div class="info-grid" style="margin-top: 12px;">
+                        <div class="info-item">
+                            <span class="info-label">预计距离</span>
+                            <span class="info-value">120 km</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">预计时长</span>
+                            <span class="info-value">210 分钟</span>
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-top: 16px; text-align: center;">
+                    <button class="btn btn-ghost" onclick="showToast('手动派单功能开发中', 'warning')">使用手动派单</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('dispatchModal')">取消</button>
+                <button class="btn btn-primary" onclick="submitDispatch()">确认派单</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+    
+    <script src="../assets/js/app.js"></script>
+    <script src="../assets/js/mock-data.js"></script>
+    <script>
+        // 订单状态
+        const orderStatus = 'IN_TRANSPORT';
+        
+        // 状态映射
+        const statusMap = {
+            'PENDING': { text: '待派单', class: 'status-pending' },
+            'ASSIGNED': { text: '已派单', class: 'status-assigned' },
+            'IN_TRANSPORT': { text: '运输中', class: 'status-in-transport' },
+            'ARRIVED': { text: '已到达', class: 'status-arrived' },
+            'SIGNED': { text: '已签收', class: 'status-signed' },
+            'COMPLETED': { text: '已完成', class: 'status-completed' },
+            'CANCELLED': { text: '已取消', class: 'status-cancelled' }
+        };
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initPage();
+        });
+        
+        function initPage() {
+            // Tab切换
+            initTabs();
+            
+            // 根据状态控制Tab显示
+            updateTabsByStatus();
+            
+            // 生成操作按钮
+            generateOperationButtons();
+        }
+        
+        // Tab切换初始化
+        function initTabs() {
+            const tabItems = document.querySelectorAll('.tab-item');
+            tabItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    const tab = this.dataset.tab;
+                    
+                    // 更新Tab激活状态
+                    tabItems.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // 更新面板显示
+                    document.querySelectorAll('.tab-panel').forEach(panel => {
+                        panel.classList.remove('active');
+                    });
+                    document.getElementById(tab + 'Panel').classList.add('active');
+                });
+            });
+        }
+        
+        // 根据订单状态控制Tab显示
+        function updateTabsByStatus() {
+            const transportTab = document.getElementById('transportTab');
+            const trackTab = document.getElementById('trackTab');
+            
+            // 运输信息Tab：ASSIGNED及之后状态显示
+            if (['ASSIGNED', 'IN_TRANSPORT', 'ARRIVED', 'SIGNED', 'COMPLETED'].includes(orderStatus)) {
+                transportTab.style.display = 'block';
+            } else {
+                transportTab.style.display = 'none';
+            }
+            
+            // 轨迹信息Tab：IN_TRANSPORT及之后状态显示
+            if (['IN_TRANSPORT', 'ARRIVED', 'SIGNED', 'COMPLETED'].includes(orderStatus)) {
+                trackTab.style.display = 'block';
+            } else {
+                trackTab.style.display = 'none';
+            }
+        }
+        
+        // 生成操作按钮
+        function generateOperationButtons() {
+            const container = document.getElementById('operationButtons');
+            let buttons = [];
+            
+            switch(orderStatus) {
+                case 'PENDING':
+                    buttons = [
+                        { text: '智能派单', class: 'btn-primary', onclick: 'openModal("dispatchModal")' },
+                        { text: '修改', class: 'btn-secondary', onclick: 'showToast("跳转到订单编辑页", "success")' },
+                        { text: '取消', class: 'btn-ghost', onclick: 'openModal("cancelModal")' }
+                    ];
+                    break;
+                case 'ASSIGNED':
+                    buttons = [
+                        { text: '开始运输', class: 'btn-success', onclick: 'startTransport()' },
+                        { text: '重新派单', class: 'btn-primary', onclick: 'openModal("dispatchModal")' },
+                        { text: '取消', class: 'btn-ghost', onclick: 'openModal("cancelModal")' }
+                    ];
+                    break;
+                case 'IN_TRANSPORT':
+                    buttons = [
+                        { text: '到达确认', class: 'btn-success', onclick: 'arrivedConfirm()' },
+                        { text: '异常上报', class: 'btn-danger', onclick: 'reportException()' }
+                    ];
+                    break;
+                case 'ARRIVED':
+                    buttons = [
+                        { text: '签收确认', class: 'btn-success', onclick: 'openModal("signModal")' }
+                    ];
+                    break;
+                case 'SIGNED':
+                    buttons = [
+                        { text: '确认完成', class: 'btn-primary', onclick: 'completeOrder()' }
+                    ];
+                    break;
+                default:
+                    buttons = [];
+            }
+            
+            container.innerHTML = buttons.map(btn => 
+                `<button class="btn ${btn.class}" onclick="${btn.onclick}">${btn.text}</button>`
+            ).join('');
+        }
+        
+        // 弹窗控制
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+        
+        // Toast提示
+        function showToast(message, type) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast toast-' + type + ' active';
+            
+            setTimeout(() => {
+                toast.classList.remove('active');
+            }, type === 'error' ? 0 : 3000);
+        }
+        
+        // 签收提交
+        function submitSign() {
+            const signName = document.getElementById('signName').value;
+            if (!signName) {
+                showToast('请填写签收人姓名', 'error');
+                return;
+            }
+            
+            closeModal('signModal');
+            showToast('签收成功，订单状态已更新', 'success');
+            
+            // 更新状态显示
+            document.getElementById('orderStatus').textContent = '已签收';
+            document.getElementById('orderStatus').className = 'status-badge status-signed';
+            
+            // 重新生成操作按钮
+            setTimeout(generateOperationButtons, 500);
+        }
+        
+        // 取消提交
+        function submitCancel() {
+            const reason = document.getElementById('cancelReason').value;
+            if (!reason) {
+                showToast('请填写取消原因', 'error');
+                return;
+            }
+            
+            closeModal('cancelModal');
+            showToast('订单已取消', 'success');
+            
+            // 跳转到订单列表
+            setTimeout(() => {
+                location.href = '订单列表.html';
+            }, 1000);
+        }
+        
+        // 派单提交
+        function submitDispatch() {
+            closeModal('dispatchModal');
+            showToast('派单成功，已通知司机', 'success');
+            
+            // 更新状态显示
+            document.getElementById('orderStatus').textContent = '已派单';
+            document.getElementById('orderStatus').className = 'status-badge status-assigned';
+            
+            // 重新生成操作按钮
+            setTimeout(generateOperationButtons, 500);
+        }
+        
+        // 开始运输
+        function startTransport() {
+            showToast('已开始运输，请注意安全', 'success');
+            
+            // 更新状态显示
+            document.getElementById('orderStatus').textContent = '运输中';
+            document.getElementById('orderStatus').className = 'status-badge status-in-transport';
+            
+            // 重新生成操作按钮
+            setTimeout(generateOperationButtons, 500);
+        }
+        
+        // 到达确认
+        function arrivedConfirm() {
+            showToast('已确认到达目的地', 'success');
+            
+            // 更新状态显示
+            document.getElementById('orderStatus').textContent = '已到达';
+            document.getElementById('orderStatus').className = 'status-badge status-arrived';
+            
+            // 重新生成操作按钮
+            setTimeout(generateOperationButtons, 500);
+        }
+        
+        // 异常上报
+        function reportException() {
+            showToast('异常上报功能开发中', 'warning');
+        }
+        
+        // 确认完成
+        function completeOrder() {
+            showToast('订单已完成', 'success');
+            
+            // 更新状态显示
+            document.getElementById('orderStatus').textContent = '已完成';
+            document.getElementById('orderStatus').className = 'status-badge status-completed';
+            
+            // 重新生成操作按钮
+            setTimeout(generateOperationButtons, 500);
+        }
+    </script>
+</body>
+</html>

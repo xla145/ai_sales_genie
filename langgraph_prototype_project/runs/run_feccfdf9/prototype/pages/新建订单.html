@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>订单管理 - 新建订单 - 智能物流管理系统</title>
+    <link rel="stylesheet" href="../assets/css/styles.css">
+    <style>
+        .page-container {
+            padding: 24px;
+            background: #f5f7fa;
+            min-height: 100vh;
+        }
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            background: #fff;
+            padding: 16px 24px;
+            border-radius: 4px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .page-title-wrap {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .page-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #262626;
+            margin: 0;
+        }
+        .page-title-sub {
+            color: #8c8c8c;
+            font-size: 14px;
+        }
+        .form-card {
+            background: #fff;
+            border-radius: 4px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            margin-bottom: 16px;
+        }
+        .form-card-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid #e8e8e8;
+            font-size: 16px;
+            font-weight: 600;
+            color: #262626;
+        }
+        .form-card-body {
+            padding: 24px;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+        .form-field {
+            display: flex;
+            flex-direction: column;
+        }
+        .form-field.full-width {
+            grid-column: 1 / -1;
+        }
+        .form-label {
+            font-size: 14px;
+            color: #595959;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+        .form-label .required {
+            color: #ff4d4f;
+            margin-left: 4px;
+        }
+        .form-input,
+        .form-select,
+        .form-textarea {
+            height: 36px;
+            padding: 0 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: #1890ff;
+        }
+        .form-input.error,
+        .form-select.error {
+            border-color: #ff4d4f;
+        }
+        .form-textarea {
+            height: auto;
+            min-height: 80px;
+            padding: 8px 12px;
+            resize: vertical;
+        }
+        .form-error {
+            color: #ff4d4f;
+            font-size: 12px;
+            margin-top: 4px;
+            display: none;
+        }
+        .form-error.show {
+            display: block;
+        }
+        .form-checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .form-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+        .form-checkbox input {
+            cursor: pointer;
+        }
+        .form-row {
+            display: flex;
+            gap: 12px;
+        }
+        .form-row .form-field {
+            flex: 1;
+        }
+        .page-actions {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            padding: 24px;
+            background: #fff;
+            border-radius: 4px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .btn {
+            height: 40px;
+            padding: 0 24px;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+        }
+        .btn-primary {
+            background: #1890ff;
+            color: #fff;
+        }
+        .btn-primary:hover {
+            background: #40a9ff;
+        }
+        .btn-primary:disabled {
+            background: #bae7ff;
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            background: #fff;
+            color: #595959;
+            border: 1px solid #d9d9d9;
+        }
+        .btn-secondary:hover {
+            border-color: #1890ff;
+            color: #1890ff;
+        }
+        .btn-back {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: #595959;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-back:hover {
+            color: #1890ff;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            background: #fff7e6;
+            color: #fa8c16;
+            border: 1px solid #ffd591;
+        }
+        .cascader-select {
+            display: flex;
+            gap: 8px;
+        }
+        .cascader-select select {
+            flex: 1;
+        }
+        .toast {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            border-radius: 4px;
+            font-size: 14px;
+            z-index: 10000;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        .toast.show {
+            opacity: 1;
+        }
+        .toast-success {
+            background: #f6ffed;
+            color: #52c41a;
+            border: 1px solid #b7eb8f;
+        }
+        .toast-error {
+            background: #fff2f0;
+            color: #ff4d4f;
+            border: 1px solid #ffccc7;
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.45);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .modal-overlay.show {
+            display: flex;
+        }
+        .modal {
+            background: #fff;
+            border-radius: 4px;
+            width: 400px;
+            max-width: 90%;
+        }
+        .modal-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid #e8e8e8;
+            font-size: 16px;
+            font-weight: 600;
+            color: #262626;
+        }
+        .modal-body {
+            padding: 24px;
+            color: #595959;
+            font-size: 14px;
+        }
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid #e8e8e8;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+        .customer-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #fff;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 100;
+            display: none;
+        }
+        .customer-suggestions.show {
+            display: block;
+        }
+        .customer-suggestion-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .customer-suggestion-item:hover {
+            background: #f5f7fa;
+        }
+        .form-field-wrapper {
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- 侧边栏导航 -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-icon">📦</div>
+                <span class="brand-text">智能物流管理系统</span>
+            </div>
+            <nav class="nav">
+                <div class="nav-section">
+                    <a href="首页.html" class="nav-link">首页</a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">订单管理</div>
+                    <a href="订单列表.html" class="nav-link">订单列表</a>
+                    <a href="新建订单.html" class="nav-link active">新建订单</a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">资源管理</div>
+                    <a href="车辆管理.html" class="nav-link">车辆管理</a>
+                    <a href="司机管理.html" class="nav-link">司机管理</a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">运输管理</div>
+                    <a href="智能调度.html" class="nav-link">智能调度</a>
+                    <a href="运输轨迹.html" class="nav-link">运输轨迹</a>
+                </div>
+                <div class="nav-section">
+                    <a href="异常处理.html" class="nav-link">异常处理</a>
+                </div>
+                <div class="nav-section">
+                    <a href="数据看板.html" class="nav-link">数据看板</a>
+                </div>
+                <div class="nav-section">
+                    <a href="系统设置.html" class="nav-link">系统设置</a>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- 主内容区 -->
+        <main class="main">
+            <!-- 顶部导航 -->
+            <header class="topbar">
+                <div class="breadcrumb">
+                    <span>订单管理</span>
+                    <span class="separator">/</span>
+                    <span class="current">新建订单</span>
+                </div>
+                <div class="topbar-actions">
+                    <div class="user-info">
+                        <span class="user-avatar">运</span>
+                        <span class="user-name">运营人员</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- 页面内容 -->
+            <div class="page-container">
+                <!-- 页面头部 -->
+                <div class="page-header">
+                    <div class="page-title-wrap">
+                        <div class="btn-back" onclick="handleBack()">
+                            <span>←</span>
+                            <span>返回</span>
+                        </div>
+                        <h1 class="page-title">新建订单</h1>
+                        <span class="status-badge">待派单</span>
+                    </div>
+                </div>
+
+                <form id="orderForm" onsubmit="handleSubmit(event)">
+                    <!-- 基本信息 -->
+                    <div class="form-card">
+                        <div class="form-card-header">基本信息</div>
+                        <div class="form-card-body">
+                            <div class="form-grid">
+                                <div class="form-field">
+                                    <label class="form-label">订单编号</label>
+                                    <input type="text" class="form-input" id="orderNo" readonly style="background: #f5f7fa;">
+                                </div>
+                                <div class="form-field">
+                                    <label class="form-label">客户名称 <span class="required">*</span></label>
+                                    <div class="form-field-wrapper">
+                                        <input type="text" class="form-input" id="customerName" placeholder="请输入客户名称" onblur="validateField('customerName')" oninput="handleCustomerInput()">
+                                        <div class="customer-suggestions" id="customerSuggestions"></div>
+                                    </div>
+                                    <div class="form-error" id="customerNameError">请输入客户名称</div>
+                                </div>
+                                <div class="form-field">
+                                    <label class="form-label">客户电话 <span class="required">*</span></label>
+                                    <input type="text" class="form-input" id="customerPhone" placeholder="请输入客户电话" onblur="validateField('customerPhone')">
+                                    <div class="form-error" id="customerPhoneError">请输入正确的手机号</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 发货信息 -->
+                    <div class="form-card">
+                        <div class="form-card-header">发货信息</div>
+                        <div class="form-card-body">
+                            <div class="form-grid">
+                                <div class="form-field">
+                                    <label class="form-label">发货人 <span class="required">*</span></label>
+                                    <input type="text" class="form-input" id="shipperName" placeholder="请输入发货人" onblur="validateField('shipperName')">
+                                    <div class="form-error" id="shipperNameError">请输入发货人</div>
+                                </div>
+                                <div class="form-field">
+                                    <label class="form-label">联系电话 <span class="required">*</span></label>
+                                    <input type="text" class="form-input" id="shipperPhone" placeholder="请输入联系电话" onblur="validateField('shipperPhone')">
+                                    <div class="form-error" id="shipperPhoneError">请输入正确的手机号</div>
+                                </div>
+                                <div class="form-field">
+                                    <label class="form-label">省份 <span class="required">*</span></label>
+                                    <select class="form-select" id="shipperProvince" onchange="loadCities('shipper')">
+                                        <option value="">请选择省份</option>
+                                        <option value="北京">北京</option>
+                                        <option value="上海">上海</option>
+                                        <option value="广东">广东</option>
+                                        <option value="浙江">浙江</option>
+                                        <option value="江苏">江苏</option>
+                                        <option value="四川">四川</option>
+                                        <option value="湖北">湖北</option>
+                                        <option value="山东">山东</option>
+                                    </select>
+                                    <div class="form-error" id="shipperProvinceError">请选择省份</div>
+                                </div>
+                                <div class="form-field">
+                                    <label class="form-label">城市 <span class="required">*</span></label>
+                                    <select class="form-select" id="shipperCity" onchange="loadDistricts('shipper')">
+                                        <option value="">请选择城市</option>
+                                    </select>
+                                    <div class="form-error" id="shipperCityError">请选择城市</div>
+                                </div>
+                                <div class="form-field">
+                                    <label class="form-label">区县 <span class="required">*</span></label>
+                                    <select class="form-select" id="shipperDistrict">
+                                        <option value="">请选择区县</option>
+                                    </select>
+                                    <div class="form-error" id="shipperDistrictError">请选择区县</div>
+                                </div>
+                                <div class="form-field">
+                                    <label class="form-label">详细地址 <span class="required">*</span></label>
+                                    <input type="text" class="form-input" id="shipperAddress" placeholder="请输入详细地址" onblur="validateField('shipperAddress')">
+                                    <div class="form-error" id="shipperAddressError">请输入详细地址</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 收货信息 -->
+                    <div class="form-card">
+                        <div class="form-card-header">收货信息</div>
+                        <div class="form-card-body">
+                            <div class="form-grid">
+                                <div class="form-field">
+                                    <label class="form-label">收货人 <span class="required">*</span></label>
+                                    <input type="text" class="form-input" id="consigneeName" placeholder="请输入收货人" onblur="validateField('consigneeName')">
+                                    <div class="form-error" id="consigneeNameError">请输入收货人</div>
+                                </div>
+                                <div class="form-field">
+                                    <label class="form-label">联系电话 <span class="required">*</span></label>
+                                    <input type="text" class="form-input" id="consigneePhone" placeholder="请输入联系电话" onblur="validateField('consigneePhone')">
+                                    <div class="form-error" id="consigneePhoneError">请输入正确的手机号</div>
+                                </div>
+                                <div class="form-field">
+                                    <label class="form-label">省份 <span class="required">*</span></label>
+                                    <select class="form-select" id="consigneeProvince" onchange="loadCities('consignee')">
+                                        <option value="">请选择省份</option>
+                                        <option value="北京">北京</option>
+                                        <option value="上海">上海</option>
+                                        <option value="广东">广东</option>
+                                        <option value="浙江">浙江</option>
+                                        <option value="江苏">江苏</option>
+                                        <option value="四川">四川</option>
+                                        <option value="湖北">湖北</option>
+                                        <option value="山东">山东</option>
+                                    </select>
+                                    <div class="form-error" id="consigneeProvinceError">请选择省份</div>
+                                </div>
+                                <div class="form-field">
+                                    <label class="form-label">城市 <span class="required">*</span></label>
+                                    <select class="form-select" id="consigneeCity" onchange="loadDistricts('consignee')">
+                                        <option value="">请选择城市</option>
+                                    </select>
+                                    <div class="form-error" id="consigneeCityError">请选择城市</div>
+                                </div>
+                                <div class="form-field">
+                                    <label class="form-label">区县 <span class="required">*</span></label>
+                                    <select class="form-select" id="consigneeDistrict">
+                                        <option value="">请选择区县</option>
+                                    </select>
+                                    <div class="form-error" id="consigneeDistrictError">请选择区县</div>
+                                </div>
+                                <div class="form-field">
+                                    <label class="form-label">详细地址 <span class="required">*</span></label>
+                                    <input type="text" class="form-input" id="consigneeAddress" placeholder="请输入详细地址" onblur="validateField('consigneeAddress')">
+                                    <div class="form-error" id="consigneeAddressError">请输入详细地址</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 货物信息 -->
+                    <div class="form-card">
+                        <div class="form-card-header">货物信息</div>
+                        <div class="form-card-body">
+                            <div class="form-grid">
+                                <div class="form-field">
+                                    <label class="form-label">货物名称 <span class="required">*</span></label>
+                                    <input type="text" class="form-input" id="goodsName" placeholder="请输入货物名称" onblur="validateField('goodsName')">
+                                    <div class="form-error" id="goodsNameError">请输入货物名称</div>
+                                </div>
+                                <div class="form-field">
+                                    <label class="form-label">货物类型 <span class="required">*</span></label>
+                                    <select class="form-select" id="goodsType" onblur="validateField('goodsType')">
+                                        <option value="">请选择货物类型</option>
+                                        <option value="NORMAL">普通货物</option>
+                                        <option value="FRAGILE">易碎品</option>
+                                        <option value="FLAMMABLE">易燃品</option>
+                                        <option value="FRESH">生鲜食品</option>
+                                        <option value="ELECTRONIC">电子产品</option>
+                                        <option value="VALUABLE">贵重物品</option>
+                                        <option value="OTHER">其他</option>
+                                    </select>
+                                    <div class="form-error" id="goodsTypeError">请选择货物类型</div>
+                                </div>
+                                <div class="form-field">
+                                    <label class="form-label">货物数量(件) <span class="required">*</span></label>
+                                    <input type="number" class="form-input" id="goodsQuantity" placeholder="请输入货物数量" min="1" onblur="validateField('goodsQuantity')">
+                                    <div class="form-error" id="goodsQuantityError">请输入正确的货物数量</div>
+                                </div>
+                                <div class="form-field">
+                                    <label class="form-label">货物重量(kg) <span class="required">*</span></label>
+                                    <input type="number" class="form-input" id="goodsWeight" placeholder="请输入货物重量" min="0.01" step="0.01" onblur="validateField('goodsWeight')">
+                                    <div class="form-error" id="goodsWeightError">请输入正确的货物重量</div>
+                                </div>
+                                <div class="form-field">
+                                    <label class="form-label">货物体积(m³)</label>
+                                    <input type="number" class="form-input" id="goodsVolume" placeholder="请输入货物体积" min="0" step="0.01">
+                                </div>
+                                <div class="form-field">
+                                    <label class="form-label">货物价值(元)</label>
+                                    <input type="number" class="form-input" id="goodsValue" placeholder="请输入货物价值" min="0">
+                                </div>
+                                <div class="form-field full-width">
+                                    <label class="form-label">特殊说明</label>
+                                    <div class="form-checkbox-group">
+                                        <label class="form-checkbox">
+                                            <input type="checkbox" value="FRAGILE">
+                                            <span>易碎品</span>
+                                        </label>
+                                        <label class="form-checkbox">
+                                            <input type="checkbox" value="FLAMMABLE">
+                                            <span>易燃品</span>
+                                        </label>
+                                        <label class="form-checkbox">
+                                            <input type="checkbox" value="TEMP_CONTROL">
+                                            <span>需要温控</span>
+                                        </label>
+                                        <label class="form-checkbox">
+                                            <input type="checkbox" value="URGENT">
+                                            <span>加急</span>
+                                        </label>
+                                        <label class="form-checkbox">
+                                            <input type="checkbox" value="ESCORT">
+                                            <span>需押运</span>
+                                        </label>
+                                        <label class="form-checkbox">
+                                            <input type="checkbox" value="LARGE">
+                                            <span>大件货物</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 时间要求 -->
+                    <div class="form-card">
+                        <div class="form-card-header">时间要求</div>
+                        <div class="form-card-body">
+                            <div class="form-grid">
+                                <div class="form-field">
+                                    <label class="form-label">期望提货时间</label>
+                                    <input type="datetime-local" class="form-input" id="expectedPickupTime">
+                                </div>
+                                <div class="form-field">
+                                    <label class="form-label">期望送达时间 <span class="required">*</span></label>
+                                    <input type="datetime-local" class="form-input" id="expectedDeliveryTime" onblur="validateField('expectedDeliveryTime')">
+                                    <div class="form-error" id="expectedDeliveryTimeError">请选择期望送达时间</div>
+                                </div>
+                                <div class="form-field">
+                                    <label class="form-label">最迟送达时间</label>
+                                    <input type="datetime-local" class="form-input" id="latestDeliveryTime">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 备注信息 -->
+                    <div class="form-card">
+                        <div class="form-card-header">备注信息</div>
+                        <div class="form-card-body">
+                            <div class="form-field full-width">
+                                <textarea class="form-textarea" id="remark" placeholder="请输入订单备注（最多500字）" maxlength="500"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 操作按钮 -->
+                    <div class="page-actions">
+                        <button type="button" class="btn btn-secondary" onclick="handleCancel()">取消</button>
+                        <button type="submit" class="btn btn-primary" id="submitBtn">提交订单</button>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <!-- 提示消息 -->
+    <div class="toast" id="toast"></div>
+
+    <!-- 确认弹窗 -->
+    <div class="modal-overlay" id="confirmModal">
+        <div class="modal">
+            <div class="modal-header">确认离开</div>
+            <div class="modal-body">
+                确定要离开吗？已填写的内容将不会保存。
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+                <button class="btn btn-primary" onclick="confirmLeave()">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../assets/js/app.js"></script>
+    <script src="../assets/js/mock-data.js"></script>
+    <script>
+        // 省份-城市映射
+        const cityData = {
+            '北京': ['北京市'],
+            '上海': ['上海市'],
+            '广东': ['广州', '深圳', '东莞', '佛山', '中山'],
+            '浙江': ['杭州', '宁波', '温州', '嘉兴', '绍兴'],
+            '江苏': ['南京', '苏州', '无锡', '常州', '南通'],
+            '四川': ['成都', '绵阳', '德阳', '宜宾', '泸州'],
+            '湖北': ['武汉', '宜昌', '襄阳', '荆州', '黄冈'],
+            '山东': ['济南', '青岛', '烟台', '威海', '潍坊']
+        };
+
+        // 城市-区县映射
+        const districtData = {
+            '北京市': ['东城区', '西城区', '朝阳区', '海淀区', '丰台区'],
+            '上海市': ['黄浦区', '徐汇区', '长宁区', '静安区', '浦东新区'],
+            '广州': ['天河区', '越秀区', '海珠区', '番禺区', '白云区'],
+            '深圳': ['福田区', '南山区', '罗湖区', '宝安区', '龙岗区'],
+            '杭州': ['西湖区', '上城区', '拱墅区', '余杭区', '滨江区'],
+            '南京': ['玄武区', '秦淮区', '建邺区', '鼓楼区', '江宁区'],
+            '成都': ['锦江区', '青羊区', '金牛区', '武侯区', '成华区'],
+            '武汉': ['江汉区', '武昌区', '洪山区', '江岸区', '硚口区'],
+            '济南': ['历下区', '市中区', '槐荫区', '天桥区', '历城区'],
+            '青岛': ['市南区', '市北区', '李沧区', '崂山区', '黄岛区']
+        };
+
+        // 历史客户数据
+        const customerHistory = [
+            { name: '阿里巴巴（中国）有限公司', phone: '13800138000' },
+            { name: '京东集团', phone: '13900139000' },
+            { name: '腾讯科技有限公司', phone: '13700137000' },
+            { name: '百度在线网络技术有限公司', phone: '13600136000' },
+            { name: '华为技术有限公司', phone: '13500135000' },
+            { name: '小米科技有限责任公司', phone: '13400134000' },
+            { name: '字节跳动科技有限公司', phone: '13300133000' },
+            { name: '美团点评', phone: '13200132000' },
+            { name: '拼多多', phone: '13100131000' },
+            { name: '网易公司', phone: '13000130000' }
+        ];
+
+        // 表单是否有变化
+        let formChanged = false;
+
+        // 初始化页面
+        function initPage() {
+            // 生成订单编号
+            const now = new Date();
+            const orderNo = 'ORD' + formatDate(now) + String(now.getTime()).slice(-6);
+            document.getElementById('orderNo').value = orderNo;
+
+            // 监听表单变化
+            const form = document.getElementById('orderForm');
+            form.addEventListener('input', () => {
+                formChanged = true;
+            });
+            form.addEventListener('change', () => {
+                formChanged = true;
+            });
+
+            // 设置默认的期望送达时间（3天后）
+            const defaultDeliveryTime = new Date();
+            defaultDeliveryTime.setDate(defaultDeliveryTime.getDate() + 3);
+            document.getElementById('expectedDeliveryTime').min = new Date().toISOString().slice(0, 16);
+        }
+
+        // 格式化日期
+        function formatDate(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return year + month + day;
+        }
+
+        // 加载城市
+        function loadCities(prefix) {
+            const provinceSelect = document.getElementById(prefix + 'Province');
+            const citySelect = document.getElementById(prefix + 'City');
+            const districtSelect = document.getElementById(prefix + 'District');
+
+            const province = provinceSelect.value;
+            citySelect.innerHTML = '<option value="">请选择城市</option>';
+            districtSelect.innerHTML = '<option value="">请选择区县</option>';
+
+            if (province && cityData[province]) {
+                cityData[province].forEach(city => {
+                    const option = document.createElement('option');
+                    option.value = city;
+                    option.textContent = city;
+                    citySelect.appendChild(option);
+                });
+            }
+        }
+
+        // 加载区县
+        function loadDistricts(prefix) {
+            const citySelect = document.getElementById(prefix + 'City');
+            const districtSelect = document.getElementById(prefix + 'District');
+
+            const city = citySelect.value;
+            districtSelect.innerHTML = '<option value="">请选择区县</option>';
+
+            if (city && districtData[city]) {
+                districtData[city].forEach(district => {
+                    const option = document.createElement('option');
+                    option.value = district;
+                    option.textContent = district;
+                    districtSelect.appendChild(option);
+                });
+            }
+        }
+
+        // 客户名称输入联想
+        function handleCustomerInput() {
+            const input = document.getElementById('customerName');
+            const value = input.value.trim();
+            const suggestions = document.getElementById('customerSuggestions');
+
+            if (value.length < 1) {
+                suggestions.classList.remove('show');
+                return;
+            }
+
+            const matches = customerHistory.filter(c => c.name.includes(value));
+            if (matches.length === 0) {
+                suggestions.classList.remove('show');
+                return;
+            }
+
+            suggestions.innerHTML = matches.map(c => `
+                <div class="customer-suggestion-item" onclick="selectCustomer('${c.name}', '${c.phone}')">
+                    ${c.name} - ${c.phone}
+                </div>
+            `).join('');
+            suggestions.classList.add('show');
+        }
+
+        // 选择客户
+        function selectCustomer(name, phone) {
+            document.getElementById('customerName').value = name;
+            document.getElementById('customerPhone').value = phone;
+            document.getElementById('customerSuggestions').classList.remove('show');
+            formChanged = true;
+        }
+
+        // 点击其他地方关闭联想下拉
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.form-field-wrapper')) {
+                document.getElementById('customerSuggestions').classList.remove('show');
+            }
+        });
+
+        // 字段校验规则
+        const validationRules = {
+            customerName: {
+                required: true,
+                maxLength: 50,
+                errorId: 'customerNameError',
+                errorMsg: '请输入客户名称'
+            },
+            customerPhone: {
+                required: true,
+                pattern: /^1[3-9]\d{9}$/,
+                errorId: 'customerPhoneError',
+                errorMsg: '请输入正确的手机号'
+            },
+            shipperName: {
+                required: true,
+                maxLength: 30,
+                errorId: 'shipperNameError',
+                errorMsg: '请输入发货人'
+            },
+            shipperPhone: {
+                required: true,
+                pattern: /^1[3-9]\d{9}$/,
+                errorId: 'shipperPhoneError',
+                errorMsg: '请输入正确的手机号'
+            },
+            shipperProvince: {
+                required: true,
+                errorId: 'shipperProvinceError',
+                errorMsg: '请选择省份'
+            },
+            shipperCity: {
+                required: true,
+                errorId: 'shipperCityError',
+                errorMsg: '请选择城市'
+            },
+            shipperDistrict: {
+                required: true,
+                errorId: 'shipperDistrictError',
+                errorMsg: '请选择区县'
+            },
+            shipperAddress: {
+                required: true,
+                maxLength: 100,
+                errorId: 'shipperAddressError',
+                errorMsg: '请输入详细地址'
+            },
+            consigneeName: {
+                required: true,
+                maxLength: 30,
+                errorId: 'consigneeNameError',
+                errorMsg: '请输入收货人'
+            },
+            consigneePhone: {
+                required: true,
+                pattern: /^1[3-9]\d{9}$/,
+                errorId: 'consigneePhoneError',
+                errorMsg: '请输入正确的手机号'
+            },
+            consigneeProvince: {
+                required: true,
+                errorId: 'consigneeProvinceError',
+                errorMsg: '请选择省份'
+            },
+            consigneeCity: {
+                required: true,
+                errorId: 'consigneeCityError',
+                errorMsg: '请选择城市'
+            },
+            consigneeDistrict: {
+                required: true,
+                errorId: 'consigneeDistrictError',
+                errorMsg: '请选择区县'
+            },
+            consigneeAddress: {
+                required: true,
+                maxLength: 100,
+                errorId: 'consigneeAddressError',
+                errorMsg: '请输入详细地址'
+            },
+            goodsName: {
+                required: true,
+                maxLength: 50,
+                errorId: 'goodsNameError',
+                errorMsg: '请输入货物名称'
+            },
+            goodsType: {
+                required: true,
+                errorId: 'goodsTypeError',
+                errorMsg: '请选择货物类型'
+            },
+            goodsQuantity: {
+                required: true,
+                min: 1,
+                errorId: 'goodsQuantityError',
+                errorMsg: '请输入正确的货物数量'
+            },
+            goodsWeight: {
+                required: true,
+                min: 0.01,
+                errorId: 'goodsWeightError',
+                errorMsg: '请输入正确的货物重量'
+            },
+            expectedDeliveryTime: {
+                required: true,
+                errorId: 'expectedDeliveryTimeError',
+                errorMsg: '请选择期望送达时间'
+            }
+        };
+
+        // 校验单个字段
+        function validateField(fieldId) {
+            const field = document.getElementById(fieldId);
+            const rule = validationRules[fieldId];
+            if (!rule) return true;
+
+            const value = field.value.trim();
+            let isValid = true;
+            let errorMsg = '';
+
+            // 必填校验
+            if (rule.required && !value) {
+                isValid = false;
+                errorMsg = rule.errorMsg;
+            }
+
+            // 格式校验
+            if (isValid && value && rule.pattern && !rule.pattern.test(value)) {
+                isValid = false;
+                errorMsg = rule.errorMsg;
+            }
+
+            // 最小值校验
+            if (isValid && value && rule.min !== undefined && parseFloat(value) < rule.min) {
+                isValid = false;
+                errorMsg = rule.errorMsg;
+            }
+
+            // 最大长度校验
+            if (isValid && value && rule.maxLength && value.length > rule.maxLength) {
+                isValid = false;
+                errorMsg = rule.errorMsg;
+            }
+
+            // 显示/隐藏错误
+            const errorEl = document.getElementById(rule.errorId);
+            if (errorEl) {
+                if (!isValid) {
+                    errorEl.classList.add('show');
+                    field.classList.add('error');
+                } else {
+                    errorEl.classList.remove('show');
+                    field.classList.remove('error');
+                }
+            }
+
+            return isValid;
+        }
+
+        // 全量校验
+        function validateForm() {
+            let isValid = true;
+            let firstErrorField = null;
+
+            for (const fieldId in validationRules) {
+                const isFieldValid = validateField(fieldId);
+                if (!isFieldValid) {
+                    isValid = false;
+                    if (!firstErrorField) {
+                        firstErrorField = fieldId;
+                    }
+                }
+            }
+
+            // 滚动到第一个错误字段
+            if (firstErrorField) {
+                const errorField = document.getElementById(firstErrorField);
+                errorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                errorField.focus();
+            }
+
+            return isValid;
+        }
+
+        // 显示提示消息
+        function showToast(message, type) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast toast-' + type + ' show';
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, type === 'success' ? 3000 : 5000);
+        }
+
+        // 显示确认弹窗
+        function showConfirmModal() {
+            document.getElementById('confirmModal').classList.add('show');
+        }
+
+        // 关闭确认弹窗
+        function closeModal() {
+            document.getElementById('confirmModal').classList.remove('show');
+        }
+
+        // 确认离开
+        function confirmLeave() {
+            closeModal();
+            window.location.href = '订单列表.html';
+        }
+
+        // 返回
+        function handleBack() {
+            if (formChanged) {
+                showConfirmModal();
+            } else {
+                window.location.href = '订单列表.html';
+            }
+        }
+
+        // 取消
+        function handleCancel() {
+            if (formChanged) {
+                showConfirmModal();
+            }
+        }
+
+        // 提交表单
+        function handleSubmit(event) {
+            event.preventDefault();
+
+            if (!validateForm()) {
+                return;
+            }
+
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = '提交中...';
+
+            // 模拟提交
+            setTimeout(() => {
+                showToast('订单创建成功', 'success');
+                formChanged = false;
+
+                setTimeout(() => {
+                    window.location.href = '订单列表.html';
+                }, 1500);
+            }, 1000);
+        }
+
+        // 初始化
+        window.onload = initPage;
+    </script>
+</body>
+</html>

@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能物流管理系统</title>
+    <link rel="stylesheet" href="./assets/css/styles.css">
+    <link rel="stylesheet" href="https://unpkg.com/element-plus@2.4.4/dist/index.css">
+    <link rel="stylesheet" href="https://unpkg.com/@element-plus/icons-vue@2.3.1/dist/index.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f0f2f5;
+            min-height: 100vh;
+        }
+        
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        /* Sidebar Styles */
+        .sidebar {
+            width: 240px;
+            background: linear-gradient(180deg, #001529 0%, #002c5a 100%);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 100;
+        }
+        
+        .brand {
+            height: 64px;
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .brand-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #1890ff 0%, #36cfc9 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+        }
+        
+        .brand-icon svg {
+            width: 20px;
+            height: 20px;
+            fill: white;
+        }
+        
+        .brand-text {
+            color: #fff;
+            font-size: 18px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        
+        .nav-section {
+            padding: 16px 0;
+        }
+        
+        .nav-section-title {
+            color: rgba(255,255,255,0.45);
+            font-size: 12px;
+            padding: 8px 24px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 24px;
+            color: rgba(255,255,255,0.65);
+            text-decoration: none;
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .nav-item:hover {
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+        }
+        
+        .nav-item.active {
+            background: linear-gradient(90deg, #1890ff 0%, #36cfc9 100%);
+            color: #fff;
+        }
+        
+        .nav-item.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: #fff;
+        }
+        
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .nav-icon svg {
+            width: 18px;
+            height: 18px;
+        }
+        
+        .nav-text {
+            font-size: 14px;
+        }
+        
+        .nav-badge {
+            margin-left: auto;
+            background: #ff4d4f;
+            color: #fff;
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            min-width: 20px;
+            text-align: center;
+        }
+        
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 240px;
+            min-height: 100vh;
+        }
+        
+        /* Topbar */
+        .topbar {
+            height: 64px;
+            background: #fff;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        
+        .topbar-left {
+            display: flex;
+            align-items: center;
+        }
+        
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            color: #8c8c8c;
+            font-size: 14px;
+        }
+        
+        .breadcrumb-item {
+            color: #595959;
+        }
+        
+        .breadcrumb-separator {
+            margin: 0 8px;
+            color: #d9d9d9;
+        }
+        
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .topbar-action {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #595959;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+        
+        .topbar-action:hover {
+            background: #f5f7fa;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+        
+        .user-info:hover {
+            background: #f5f7fa;
+        }
+        
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #1890ff 0%, #36cfc9 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .user-name {
+            color: #262626;
+            font-size: 14px;
+        }
+        
+        .user-role {
+            color: #8c8c8c;
+            font-size: 12px;
+        }
+        
+        /* Page Content */
+        .page-content {
+            padding: 24px;
+        }
+        
+        .page-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #262626;
+            margin-bottom: 24px;
+        }
+        
+        /* Metrics Cards */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+        
+        .metric-card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+        }
+        
+        .metric-card.blue::before { background: #1890ff; }
+        .metric-card.green::before { background: #52c41a; }
+        .metric-card.red::before { background: #ff4d4f; }
+        .metric-card.orange::before { background: #fa8c16; }
+        
+        .metric-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .metric-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        
+        .metric-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .metric-icon.blue { background: rgba(24, 144, 255, 0.1); color: #1890ff; }
+        .metric-icon.green { background: rgba(82, 196, 26, 0.1); color: #52c41a; }
+        .metric-icon.red { background: rgba(255, 77, 79, 0.1); color: #ff4d4f; }
+        .metric-icon.orange { background: rgba(250, 140, 22, 0.1); color: #fa8c16; }
+        
+        .metric-icon svg {
+            width: 24px;
+            height: 24px;
+        }
+        
+        .metric-trend {
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+        
+        .metric-trend.up {
+            background: rgba(82, 196, 26, 0.1);
+            color: #52c41a;
+        }
+        
+        .metric-trend.down {
+            background: rgba(255, 77, 79, 0.1);
+            color: #ff4d4f;
+        }
+        
+        .metric-value {
+            font-size: 32px;
+            font-weight: 600;
+            color: #262626;
+            margin-bottom: 8px;
+        }
+        
+        .metric-label {
+            font-size: 14px;
+            color: #8c8c8c;
+        }
+        
+        /* Content Grid */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 360px;
+            gap: 24px;
+        }
+        
+        .content-main {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+        
+        .content-side {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+        
+        /* Card Styles */
+        .card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            overflow: hidden;
+        }
+        
+        .card-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #262626;
+        }
+        
+        .card-action {
+            color: #1890ff;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .card-action:hover {
+            color: #40a9ff;
+        }
+        
+        .card-body {
+            padding: 16px 24px;
+        }
+        
+        /* Todo List */
+        .todo-list {
+            list-style: none;
+        }
+        
+        .todo-item {
+            display: flex;
+            align-items: center;
+            padding: 14px 0;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .todo-item:last-child {
+            border-bottom: none;
+        }
+        
+        .todo-item:hover {
+            background: #fafafa;
+            margin: 0 -24px;
+            padding: 14px 24px;
+        }
+        
+        .todo-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 16px;
+        }
+        
+        .todo-icon.high {
+            background: rgba(250, 140, 22, 0.1);
+            color: #fa8c16;
+        }
+        
+        .todo-icon.medium {
+            background: rgba(24, 144, 255, 0.1);
+            color: #1890ff;
+        }
+        
+        .todo-icon.low {
+            background: rgba(140, 140, 140, 0.1);
+            color: #8c8c8c;
+        }
+        
+        .todo-icon svg {
+            width: 20px;
+            height: 20px;
+        }
+        
+        .todo-content {
+            flex: 1;
+        }
+        
+        .todo-title {
+            font-size: 14px;
+            color: #262626;
+            margin-bottom: 4px;
+        }
+        
+        .todo-desc {
+            font-size: 12px;
+            color: #8c8c8c;
+        }
+        
+        .todo-count {
+            font-size: 20px;
+            font-weight: 600;
+            color: #262626;
+        }
+        
+        .todo-badge {
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            margin-left: 8px;
+        }
+        
+        .todo-badge.high {
+            background: rgba(250, 140, 22, 0.1);
+            color: #fa8c16;
+        }
+        
+        .todo-badge.medium {
+            background: rgba(24, 144, 255, 0.1);
+            color: #1890ff;
+        }
+        
+        /* Quick Entry */
+        .quick-entry-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+        
+        .quick-entry-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            color: inherit;
+        }
+        
+        .quick-entry-item:hover {
+            background: #f5f7fa;
+        }
+        
+        .quick-entry-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+        }
+        
+        .quick-entry-icon.blue { background: linear-gradient(135deg, #1890ff 0%, #36cfc9 100%); }
+        .quick-entry-icon.green { background: linear-gradient(135deg, #52c41a 0%, #95de64 100%); }
+        .quick-entry-icon.orange { background: linear-gradient(135deg, #fa8c16 0%, #ffc069 100%); }
+        .quick-entry-icon.red { background: linear-gradient(135deg, #ff4d4f 0%, #ff7875 100%); }
+        .quick-entry-icon.purple { background: linear-gradient(135deg, #722ed1 0%, #b37feb 100%); }
+        .quick-entry-icon.cyan { background: linear-gradient(135deg, #13c2c2 0%, #36cfc9 100%); }
+        
+        .quick-entry-icon svg {
+            width: 24px;
+            height: 24px;
+            color: #fff;
+        }
+        
+        .quick-entry-text {
+            font-size: 14px;
+            color: #595959;
+        }
+        
+        /* Chart Container */
+        .chart-container {
+            height: 300px;
+            padding: 16px;
+        }
+        
+        .chart-tabs {
+            display: flex;
+            gap: 16px;
+            padding: 0 24px 16px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .chart-tab {
+            padding: 8px 16px;
+            font-size: 14px;
+            color: #8c8c8c;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+        
+        .chart-tab:hover {
+            color: #1890ff;
+        }
+        
+        .chart-tab.active {
+            color: #1890ff;
+            background: rgba(24, 144, 255, 0.1);
+        }
+        
+        /* Empty State */
+        .empty-state {
+            padding: 48px 24px;
+            text-align: center;
+        }
+        
+        .empty-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 16px;
+            color: #d9d9d9;
+        }
+        
+        .empty-text {
+            color: #8c8c8c;
+            font-size: 14px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .metrics-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Toast Styles */
+        .toast {
+            position: fixed;
+            top: 80px;
+            right: 24px;
+            padding: 12px 24px;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            z-index: 9999;
+            animation: slideIn 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .toast.success {
+            background: #52c41a;
+        }
+        
+        .toast.error {
+            background: #ff4d4f;
+        }
+        
+        .toast.warning {
+            background: #fa8c16;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        /* Loading Animation */
+        .loading-skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+            border-radius: 4px;
+        }
+        
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
+        /* Disabled State */
+        .nav-item.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-icon">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+                    </svg>
+                </div>
+                <span class="brand-text">智能物流</span>
+            </div>
+            
+            <nav class="nav-section">
+                <div class="nav-section-title">主要菜单</div>
+                <a class="nav-item active" href="./pages/首页.html">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+                    </span>
+                    <span class="nav-text">首页</span>
+                </a>
+                <a class="nav-item" href="./pages/订单列表.html">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+                    </span>
+                    <span class="nav-text">订单管理</span>
+                </a>
+                <a class="nav-item" href="./pages/车辆管理.html">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg>
+                    </span>
+                    <span class="nav-text">车辆管理</span>
+                </a>
+                <a class="nav-item" href="./pages/司机管理.html">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                    </span>
+                    <span class="nav-text">司机管理</span>
+                </a>
+                <a class="nav-item" href="./pages/智能调度.html">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                    </span>
+                    <span class="nav-text">智能调度</span>
+                    <span class="nav-badge">5</span>
+                </a>
+                <a class="nav-item" href="./pages/运输轨迹.html">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                    </span>
+                    <span class="nav-text">运输轨迹</span>
+                </a>
+                <a class="nav-item" href="#" onclick="showToast('异常处理功能需要先有异常数据，点击查看详情', 'warning'); return false;">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+                    </span>
+                    <span class="nav-text">异常处理</span>
+                    <span class="nav-badge">3</span>
+                </a>
+            </nav>
+            
+            <nav class="nav-section">
+                <div class="nav-section-title">系统</div>
+                <a class="nav-item" href="#" onclick="showToast('数据看板功能需要先生成数据统计', 'warning'); return false;">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+                    </span>
+                    <span class="nav-text">数据看板</span>
+                </a>
+                <a class="nav-item" href="#" onclick="showToast('系统设置功能需要管理员权限', 'warning'); return false;">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+                    </span>
+                    <span class="nav-text">系统设置</span>
+                </a>
+            </nav>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Topbar -->
+            <header class="topbar">
+                <div class="topbar-left">
+                    <div class="breadcrumb">
+                        <span class="breadcrumb-item">首页</span>
+                        <span class="breadcrumb-separator">/</span>
+                        <span class="breadcrumb-item">工作台</span>
+                    </div>
+                </div>
+                <div class="topbar-right">
+                    <div class="topbar-action" onclick="refreshData()">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                        </svg>
+                        <span>刷新</span>
+                    </div>
+                    <div class="topbar-action" onclick="showToast('暂无新消息', 'warning')">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+                        </svg>
+                        <span>消息</span>
+                    </div>
+                    <div class="user-info">
+                        <div class="user-avatar">管</div>
+                        <div>
+                            <div class="user-name">管理员</div>
+                            <div class="user-role">调度员</div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Page Content -->
+            <div class="page-content">
+                <h1 class="page-title">工作台</h1>
+                
+                <!-- Metrics Cards -->
+                <div class="metrics-grid">
+                    <div class="metric-card blue" onclick="navigateTo('订单列表.html', 'status=pending')">
+                        <div class="metric-header">
+                            <div class="metric-icon blue">
+                                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+                            </div>
+                            <span class="metric-trend up">↑ 12%</span>
+                        </div>
+                        <div class="metric-value">128</div>
+                        <div class="metric-label">今日订单</div>
+                    </div>
+                    
+                    <div class="metric-card green" onclick="navigateTo('订单列表.html', 'status=transport')">
+                        <div class="metric-header">
+                            <div class="metric-icon green">
+                                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+                            </div>
+                            <span class="metric-trend up">↑ 8%</span>
+                        </div>
+                        <div class="metric-value">45</div>
+                        <div class="metric-label">运输中</div>
+                    </div>
+                    
+                    <div class="metric-card red" onclick="navigateTo('智能调度.html')">
+                        <div class="metric-header">
+                            <div class="metric-icon red">
+                                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+                            </div>
+                            <span class="metric-trend down">↓ 5%</span>
+                        </div>
+                        <div class="metric-value">3</div>
+                        <div class="metric-label">异常订单</div>
+                    </div>
+                    
+                    <div class="metric-card orange">
+                        <div class="metric-header">
+                            <div class="metric-icon orange">
+                                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
+                            </div>
+                            <span class="metric-trend up">↑ 15%</span>
+                        </div>
+                        <div class="metric-value">¥126,800</div>
+                        <div class="metric-label">今日收入</div>
+                    </div>
+                </div>
+                
+                <!-- Content Grid -->
+                <div class="content-grid">
+                    <div class="content-main">
+                        <!-- Quick Entry -->
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title">快捷入口</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="quick-entry-grid">
+                                    <a class="quick-entry-item" href="./pages/新建订单.html">
+                                        <div class="quick-entry-icon blue">
+                                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                                        </div>
+                                        <span class="quick-entry-text">新建订单</span>
+                                    </a>
+                                    <a class="quick-entry-item" href="./pages/车辆管理.html">
+                                        <div class="quick-entry-icon green">
+                                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg>
+                                        </div>
+                                        <span class="quick-entry-text">车辆管理</span>
+                                    </a>
+                                    <a class="quick-entry-item" href="./pages/智能调度.html">
+                                        <div class="quick-entry-icon orange">
+                                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                                        </div>
+                                        <span class="quick-entry-text">调度中心</span>
+                                    </a>
+                                    <a class="quick-entry-item" href="./pages/运输轨迹.html">
+                                        <div class="quick-entry-icon cyan">
+                                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                                        </div>
+                                        <span class="quick-entry-text">运输轨迹</span>
+                                    </a>
+                                    <a class="quick-entry-item" href="./pages/司机管理.html">
+                                        <div class="quick-entry-icon purple">
+                                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                                        </div>
+                                        <span class="quick-entry-text">司机管理</span>
+                                    </a>
+                                    <a class="quick-entry-item" href="#" onclick="showToast('数据看板功能需要先生成数据统计', 'warning')">
+                                        <div class="quick-entry-icon red">
+                                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+                                        </div>
+                                        <span class="quick-entry-text">数据看板</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Trend Chart -->
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title">订单趋势</span>
+                            </div>
+                            <div class="chart-tabs">
+                                <span class="chart-tab active" onclick="switchChart(this, '7days')">近7天</span>
+                                <span class="chart-tab" onclick="switchChart(this, '30days')">近30天</span>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="trendChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="content-side">
+                        <!-- Todo List -->
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title">待办事项</span>
+                                <span class="card-action" onclick="navigateTo('智能调度.html')">查看全部 →</span>
+                            </div>
+                            <div class="card-body">
+                                <ul class="todo-list">
+                                    <li class="todo-item" onclick="navigateTo('智能调度.html')">
+                                        <div class="todo-icon high">
+                                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+                                        </div>
+                                        <div class="todo-content">
+                                            <div class="todo-title">待派单订单</div>
+                                            <div class="todo-desc">等待调度员派单</div>
+                                        </div>
+                                        <span class="todo-count">5</span>
+                                        <span class="todo-badge high">紧急</span>
+                                    </li>
+                                    <li class="todo-item" onclick="showToast('查看异常处理详情', 'success')">
+                                        <div class="todo-icon high">
+                                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+                                        </div>
+                                        <div class="todo-content">
+                                            <div class="todo-title">待处理异常</div>
+                                            <div class="todo-desc">运输异常待处理</div>
+                                        </div>
+                                        <span class="todo-count">3</span>
+                                        <span class="todo-badge high">紧急</span>
+                                    </li>
+                                    <li class="todo-item" onclick="navigateTo('订单列表.html', 'status=signed')">
+                                        <div class="todo-icon medium">
+                                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                                        </div>
+                                        <div class="todo-content">
+                                            <div class="todo-title">待签收订单</div>
+                                            <div class="todo-desc">等待客户签收</div>
+                                        </div>
+                                        <span class="todo-count">2</span>
+                                        <span class="todo-badge medium">待处理</span>
+                                    </li>
+                                    <li class="todo-item" onclick="showToast('暂无待审批的调度任务', 'warning')">
+                                        <div class="todo-icon medium">
+                                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                                        </div>
+                                        <div class="todo-content">
+                                            <div class="todo-title">待审批调度</div>
+                                            <div class="todo-desc">等待管理人员审批</div>
+                                        </div>
+                                        <span class="todo-count">1</span>
+                                        <span class="todo-badge medium">待处理</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <!-- Recent Activity -->
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title">最近动态</span>
+                            </div>
+                            <div class="card-body">
+                                <ul class="todo-list">
+                                    <li class="todo-item">
+                                        <div class="todo-icon low">
+                                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                                        </div>
+                                        <div class="todo-content">
+                                            <div class="todo-title">订单 LOG202401150128 已完成签收</div>
+                                            <div class="todo-desc">2分钟前</div>
+                                        </div>
+                                    </li>
+                                    <li class="todo-item">
+                                        <div class="todo-icon low">
+                                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4z"/></svg>
+                                        </div>
+                                        <div class="todo-content">
+                                            <div class="todo-title">车辆 京A12345 开始运输</div>
+                                            <div class="todo-desc">15分钟前</div>
+                                        </div>
+                                    </li>
+                                    <li class="todo-item">
+                                        <div class="todo-icon low">
+                                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6z"/></svg>
+                                        </div>
+                                        <div class="todo-content">
+                                            <div class="todo-title">新订单 LOG202401150129 已创建</div>
+                                            <div class="todo-desc">30分钟前</div>
+                                        </div>
+                                    </li>
+                                    <li class="todo-item">
+                                        <div class="todo-icon low">
+                                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+                                        </div>
+                                        <div class="todo-content">
+                                            <div class="todo-title">异常：京B67890 路线偏离</div>
+                                            <div class="todo-desc">1小时前</div>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Toast Container -->
+    <div id="toastContainer"></div>
+    
+    <script src="./assets/js/mock-data.js"></script>
+    <script src="./assets/js/app.js"></script>
+    <script src="https://unpkg.com/vue@3.4.15/dist/vue.global.prod.js"></script>
+    <script src="https://unpkg.com/element-plus@2.4.4/dist/index.full.js"></script>
+    <script src="https://unpkg.com/@element-plus/icons-vue@2.3.1/dist/index.iife.min.js"></script>
+    <script src="https://unpkg.com/chart.js@4.4.1/dist/chart.umd.js"></script>
+    
+    <script>
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            initApp();
+            initChart();
+            setupEventListeners();
+        });
+        
+        // Initialize app
+        function initApp() {
+            console.log('智能物流管理系统 - 首页加载完成');
+            
+            // Set current menu highlight
+            highlightCurrentMenu();
+            
+            // Animate metric cards on load
+            animateMetricCards();
+        }
+        
+        // Highlight current menu item
+        function highlightCurrentMenu() {
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => {
+                if (item.getAttribute('href') === './pages/首页.html') {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+        }
+        
+        // Animate metric cards
+        function animateMetricCards() {
+            const cards = document.querySelectorAll('.metric-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    card.style.transition = 'all 0.5s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        }
+        
+        // Initialize chart
+        let chartInstance = null;
+        
+        function initChart() {
+            const ctx = document.getElementById('trendChart');
+            if (!ctx) return;
+            
+            const data = {
+                labels: ['01/09', '01/10', '01/11', '01/12', '01/13', '01/14', '01/15'],
+                datasets: [{
+                    label: '订单数',
+                    data: [98, 112, 105, 125, 118, 132, 128],
+                    borderColor: '#1890ff',
+                    backgroundColor: 'rgba(24, 144, 255, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#1890ff'
+                }, {
+                    label: '收入(千元)',
+                    data: [98, 112, 105, 125, 118, 132, 127],
+                    borderColor: '#52c41a',
+                    backgroundColor: 'rgba(82, 196, 26, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#52c41a'
+                }]
+            };
+            
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: '#f0f0f0'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+        
+        // Switch chart data
+        function switchChart(tab, period) {
+            const tabs = document.querySelectorAll('.chart-tab');
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            
+            if (!chartInstance) return;
+            
+            if (period === '7days') {
+                chartInstance.data.labels = ['01/09', '01/10', '01/11', '01/12', '01/13', '01/14', '01/15'];
+                chartInstance.data.datasets[0].data = [98, 112, 105, 125, 118, 132, 128];
+                chartInstance.data.datasets[1].data = [98, 112, 105, 125, 118, 132, 127];
+            } else {
+                chartInstance.data.labels = ['12/17', '12/20', '12/23', '12/26', '12/29', '01/01', '01/04', '01/07', '01/10', '01/13'];
+                chartInstance.data.datasets[0].data = [85, 92, 105, 98, 115, 108, 122, 118, 125, 128];
+                chartInstance.data.datasets[1].data = [85, 92, 105, 98, 115, 108, 122, 118, 125, 127];
+            }
+            
+            chartInstance.update();
+        }
+        
+        // Setup event listeners
+        function setupEventListeners() {
+            // User dropdown
+            const userInfo = document.querySelector('.user-info');
+            if (userInfo) {
+                userInfo.addEventListener('click', function() {
+                    showUserMenu();
+                });
+            }
+        }
+        
+        // Show user menu
+        function showUserMenu() {
+            showToast('点击了用户信息，可以展开个人中心菜单', 'success');
+        }
+        
+        // Navigate to page
+        function navigateTo(page, params) {
+            let url = './pages/' + page;
+            if (params) {
+                url += '?' + params;
+            }
+            window.location.href = url;
+        }
+        
+        // Refresh data
+        function refreshData() {
+            showToast('数据已刷新', 'success');
+            
+            // Simulate data refresh
+            const cards = document.querySelectorAll('.metric-value');
+            cards.forEach(card => {
+                card.style.transform = 'scale(1.1)';
+                setTimeout(() => {
+                    card.style.transform = 'scale(1)';
+                }, 200);
+            });
+        }
+        
+        // Show toast message
+        function showToast(message, type) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type || 'success'}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideIn 0.3s ease reverse';
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

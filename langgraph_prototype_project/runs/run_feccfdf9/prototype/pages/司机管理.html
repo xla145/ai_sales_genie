@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>司机管理 - 智能物流管理系统</title>
+    <link rel="stylesheet" href="../assets/css/styles.css">
+</head>
+<body>
+    <div class="app">
+        <!-- 侧边栏 -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-logo">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                        <rect width="32" height="32" rx="6" fill="#1890ff"/>
+                        <path d="M8 16h16M16 8v16M10 10l12 12M22 10L10 22" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <span class="brand-text">智能物流系统</span>
+            </div>
+            <nav class="nav">
+                <div class="nav-section">
+                    <a href="首页.html" class="nav-link">
+                        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                        </svg>
+                        <span>首页</span>
+                    </a>
+                    <a href="订单列表.html" class="nav-link">
+                        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+                            <rect x="9" y="3" width="6" height="4" rx="1"/>
+                        </svg>
+                        <span>订单管理</span>
+                    </a>
+                    <a href="车辆管理.html" class="nav-link">
+                        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="1" y="3" width="15" height="13" rx="1"/>
+                            <path d="M16 8h4l3 3v5h-7V8z"/>
+                            <circle cx="5.5" cy="18.5" r="2.5"/>
+                            <circle cx="18.5" cy="18.5" r="2.5"/>
+                        </svg>
+                        <span>车辆管理</span>
+                    </a>
+                    <a href="司机管理.html" class="nav-link active">
+                        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M12 6v6l4 2"/>
+                        </svg>
+                        <span>司机管理</span>
+                    </a>
+                    <a href="智能调度.html" class="nav-link">
+                        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                            <path d="M2 17l10 5 10-5"/>
+                            <path d="M2 12l10 5 10-5"/>
+                        </svg>
+                        <span>智能调度</span>
+                    </a>
+                    <a href="运输轨迹.html" class="nav-link">
+                        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
+                            <circle cx="12" cy="10" r="3"/>
+                        </svg>
+                        <span>运输轨迹</span>
+                    </a>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- 主内容区 -->
+        <main class="main">
+            <!-- 顶部栏 -->
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="btn-ghost toggle-sidebar" onclick="toggleSidebar()">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 12h18M3 6h18M3 18h18"/>
+                        </svg>
+                    </button>
+                    <div class="breadcrumb">
+                        <span class="breadcrumb-item">司机管理</span>
+                    </div>
+                </div>
+                <div class="topbar-right">
+                    <div class="user-info">
+                        <div class="user-avatar">调度员</div>
+                        <span class="user-name">张三</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- 内容区域 -->
+            <div class="content">
+                <div class="page-header">
+                    <h1 class="page-title">司机管理</h1>
+                    <button class="btn btn-primary" onclick="openAddDrawer()">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 5v14M5 12h14"/>
+                        </svg>
+                        新增司机
+                    </button>
+                </div>
+
+                <!-- 筛选区域 -->
+                <div class="card filter-card">
+                    <div class="filter-row">
+                        <div class="filter-item">
+                            <label class="filter-label">状态</label>
+                            <select class="select" id="statusFilter" onchange="handleFilter()">
+                                <option value="">全部</option>
+                                <option value="IDLE">空闲</option>
+                                <option value="WORKING">工作中</option>
+                                <option value="RESTING">休息中</option>
+                                <option value="OFF_DUTY">休息</option>
+                            </select>
+                        </div>
+                        <div class="filter-item">
+                            <label class="filter-label">准驾车型</label>
+                            <select class="select" id="licenseFilter" onchange="handleFilter()">
+                                <option value="">全部</option>
+                                <option value="A1">A1</option>
+                                <option value="A2">A2</option>
+                                <option value="A3">A3</option>
+                                <option value="B1">B1</option>
+                                <option value="B2">B2</option>
+                                <option value="C1">C1</option>
+                                <option value="C2">C2</option>
+                            </select>
+                        </div>
+                        <div class="filter-item filter-search">
+                            <label class="filter-label">搜索</label>
+                            <div class="search-input-wrap">
+                                <input type="text" class="input" id="searchInput" placeholder="请输入姓名或电话" onkeydown="handleSearchKeydown(event)">
+                                <button class="btn btn-secondary" onclick="handleSearch()">搜索</button>
+                            </div>
+                        </div>
+                        <button class="btn btn-ghost" onclick="handleReset()">重置</button>
+                    </div>
+                </div>
+
+                <!-- 表格区域 -->
+                <div class="card table-card">
+                    <div class="table-wrap">
+                        <table class="data-table" id="driverTable">
+                            <thead>
+                                <tr>
+                                    <th style="width: 60px">序号</th>
+                                    <th>司机姓名</th>
+                                    <th>联系电话</th>
+                                    <th>准驾车型</th>
+                                    <th>所属公司</th>
+                                    <th>当前状态</th>
+                                    <th style="width: 180px">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="driverTableBody">
+                                <!-- 数据行由JS渲染 -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- 分页 -->
+                    <div class="pagination-wrap">
+                        <div class="pagination-info">
+                            共 <span id="totalCount">0</span> 条记录，每页
+                            <select class="select-small" id="pageSize" onchange="handlePageSizeChange()">
+                                <option value="10">10</option>
+                                <option value="20">20</option>
+                                <option value="50">50</option>
+                            </select>
+                            条
+                        </div>
+                        <div class="pagination" id="pagination">
+                            <!-- 分页由JS渲染 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 新增司机抽屉 -->
+    <div class="drawer-overlay" id="addDrawerOverlay" onclick="closeAddDrawer()"></div>
+    <div class="drawer" id="addDrawer">
+        <div class="drawer-header">
+            <h3 class="drawer-title">新增司机</h3>
+            <button class="btn-icon" onclick="closeAddDrawer()">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="drawer-body">
+            <form id="addDriverForm" onsubmit="handleAddSubmit(event)">
+                <div class="form-field">
+                    <label class="form-label required">司机姓名</label>
+                    <input type="text" class="input" id="addName" placeholder="请输入司机姓名" required maxlength="20">
+                    <div class="form-error" id="addNameError"></div>
+                </div>
+                <div class="form-field">
+                    <label class="form-label required">联系电话</label>
+                    <input type="text" class="input" id="addPhone" placeholder="请输入联系电话" required pattern="^1[3-9]\\d{9}$">
+                    <div class="form-error" id="addPhoneError"></div>
+                </div>
+                <div class="form-field">
+                    <label class="form-label required">身份证号</label>
+                    <input type="text" class="input" id="addIdCard" placeholder="请输入身份证号" required pattern="^\\d{17}[\\dXx]$">
+                    <div class="form-error" id="addIdCardError"></div>
+                </div>
+                <div class="form-field">
+                    <label class="form-label required">准驾车型</label>
+                    <select class="select" id="addLicense" required>
+                        <option value="">请选择准驾车型</option>
+                        <option value="A1">A1</option>
+                        <option value="A2">A2</option>
+                        <option value="A3">A3</option>
+                        <option value="B1">B1</option>
+                        <option value="B2">B2</option>
+                        <option value="C1">C1</option>
+                        <option value="C2">C2</option>
+                    </select>
+                    <div class="form-error" id="addLicenseError"></div>
+                </div>
+                <div class="form-field">
+                    <label class="form-label required">驾驶证有效期</label>
+                    <input type="date" class="input" id="addLicenseExpiry" required>
+                    <div class="form-error" id="addLicenseExpiryError"></div>
+                </div>
+                <div class="form-field">
+                    <label class="form-label required">所属公司</label>
+                    <input type="text" class="input" id="addCompany" placeholder="请输入所属公司" required>
+                    <div class="form-error" id="addCompanyError"></div>
+                </div>
+                <div class="form-field">
+                    <label class="form-label required">所属部门</label>
+                    <input type="text" class="input" id="addDepartment" placeholder="请输入所属部门" required>
+                    <div class="form-error" id="addDepartmentError"></div>
+                </div>
+            </form>
+        </div>
+        <div class="drawer-footer">
+            <button class="btn btn-secondary" onclick="closeAddDrawer()">取消</button>
+            <button class="btn btn-primary" onclick="document.getElementById('addDriverForm').requestSubmit()">提交</button>
+        </div>
+    </div>
+
+    <!-- 编辑司机抽屉 -->
+    <div class="drawer-overlay" id="editDrawerOverlay" onclick="closeEditDrawer()"></div>
+    <div class="drawer" id="editDrawer">
+        <div class="drawer-header">
+            <h3 class="drawer-title">编辑司机</h3>
+            <button class="btn-icon" onclick="closeEditDrawer()">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="drawer-body">
+            <form id="editDriverForm" onsubmit="handleEditSubmit(event)">
+                <input type="hidden" id="editId">
+                <div class="form-field">
+                    <label class="form-label required">司机姓名</label>
+                    <input type="text" class="input" id="editName" placeholder="请输入司机姓名" required maxlength="20">
+                    <div class="form-error" id="editNameError"></div>
+                </div>
+                <div class="form-field">
+                    <label class="form-label required">联系电话</label>
+                    <input type="text" class="input" id="editPhone" placeholder="请输入联系电话" required pattern="^1[3-9]\\d{9}$">
+                    <div class="form-error" id="editPhoneError"></div>
+                </div>
+                <div class="form-field">
+                    <label class="form-label required">身份证号</label>
+                    <input type="text" class="input" id="editIdCard" placeholder="请输入身份证号" required pattern="^\\d{17}[\\dXx]$">
+                    <div class="form-error" id="editIdCardError"></div>
+                </div>
+                <div class="form-field">
+                    <label class="form-label required">准驾车型</label>
+                    <select class="select" id="editLicense" required>
+                        <option value="">请选择准驾车型</option>
+                        <option value="A1">A1</option>
+                        <option value="A2">A2</option>
+                        <option value="A3">A3</option>
+                        <option value="B1">B1</option>
+                        <option value="B2">B2</option>
+                        <option value="C1">C1</option>
+                        <option value="C2">C2</option>
+                    </select>
+                    <div class="form-error" id="editLicenseError"></div>
+                </div>
+                <div class="form-field">
+                    <label class="form-label required">驾驶证有效期</label>
+                    <input type="date" class="input" id="editLicenseExpiry" required>
+                    <div class="form-error" id="editLicenseExpiryError"></div>
+                </div>
+                <div class="form-field">
+                    <label class="form-label required">所属公司</label>
+                    <input type="text" class="input" id="editCompany" placeholder="请输入所属公司" required>
+                    <div class="form-error" id="editCompanyError"></div>
+                </div>
+                <div class="form-field">
+                    <label class="form-label required">所属部门</label>
+                    <input type="text" class="input" id="editDepartment" placeholder="请输入所属部门" required>
+                    <div class="form-error" id="editDepartmentError"></div>
+                </div>
+            </form>
+        </div>
+        <div class="drawer-footer">
+            <button class="btn btn-secondary" onclick="closeEditDrawer()">取消</button>
+            <button class="btn btn-primary" onclick="document.getElementById('editDriverForm').requestSubmit()">提交</button>
+        </div>
+    </div>
+
+    <!-- 删除确认对话框 -->
+    <div class="modal-overlay" id="deleteModalOverlay" onclick="closeDeleteModal()"></div>
+    <div class="modal" id="deleteModal">
+        <div class="modal-header">
+            <h3 class="modal-title">确认删除</h3>
+        </div>
+        <div class="modal-body">
+            <p id="deleteMessage">确定要删除该司机吗？</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeDeleteModal()">取消</button>
+            <button class="btn btn-danger" onclick="confirmDelete()">确定</button>
+        </div>
+    </div>
+
+    <!-- Toast 提示 -->
+    <div class="toast" id="toast">
+        <span class="toast-message" id="toastMessage"></span>
+    </div>
+
+    <script src="../assets/js/mock-data.js"></script>
+    <script src="../assets/js/app.js"></script>
+    <script>
+        // 页面状态
+        let currentPage = 1;
+        let pageSize = 10;
+        let filteredDrivers = [];
+        let deleteDriverId = null;
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            // 设置当前菜单高亮
+            setActiveNav('司机管理.html');
+            
+            // 初始化数据
+            filteredDrivers = [...mockData.drivers];
+            
+            // 渲染表格
+            renderDriverTable();
+            
+            // 渲染分页
+            renderPagination();
+        });
+
+        // 渲染司机表格
+        function renderDriverTable() {
+            const tbody = document.getElementById('driverTableBody');
+            const start = (currentPage - 1) * pageSize;
+            const end = start + pageSize;
+            const pageData = filteredDrivers.slice(start, end);
+
+            if (pageData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7">
+                            <div class="empty">
+                                <svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="#d9d9d9" stroke-width="1">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="M12 8v4M12 16h.01"/>
+                                </svg>
+                                <p>暂无司机信息</p>
+                                <button class="btn btn-primary" onclick="openAddDrawer()">新增司机</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = pageData.map((driver, index) => {
+                const statusClass = getStatusClass(driver.status);
+                const statusText = getStatusText(driver.status);
+                return `
+                    <tr>
+                        <td>${start + index + 1}</td>
+                        <td>
+                            <a href="司机详情.html?id=${driver.id}" class="link">${driver.name}</a>
+                        </td>
+                        <td>${driver.phone}</td>
+                        <td>${driver.drivingLicense}</td>
+                        <td>${driver.company}</td>
+                        <td><span class="badge ${statusClass}">${statusText}</span></td>
+                        <td class="operation-cell">
+                            <a href="司机详情.html?id=${driver.id}" class="btn-link">查看</a>
+                            <button class="btn-link" onclick="openEditDrawer('${driver.id}')" ${driver.status === 'WORKING' ? 'disabled title="司机工作中，无法编辑"' : ''}>编辑</button>
+                            <button class="btn-link btn-link-danger" onclick="openDeleteModal('${driver.id}', '${driver.name}')" ${driver.status === 'WORKING' ? 'disabled title="司机工作中，无法删除"' : ''}>删除</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            document.getElementById('totalCount').textContent = filteredDrivers.length;
+        }
+
+        // 获取状态样式类
+        function getStatusClass(status) {
+            const statusMap = {
+                'IDLE': 'badge-info',
+                'WORKING': 'badge-primary',
+                'RESTING': 'badge-default',
+                'OFF_DUTY': 'badge-default'
+            };
+            return statusMap[status] || 'badge-default';
+        }
+
+        // 获取状态文本
+        function getStatusText(status) {
+            const statusMap = {
+                'IDLE': '空闲',
+                'WORKING': '工作中',
+                'RESTING': '休息中',
+                'OFF_DUTY': '休息'
+            };
+            return statusMap[status] || status;
+        }
+
+        // 渲染分页
+        function renderPagination() {
+            const totalPages = Math.ceil(filteredDrivers.length / pageSize);
+            const pagination = document.getElementById('pagination');
+            
+            let html = '';
+            
+            // 上一页
+            html += `<button class="page-btn" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>上一页</button>`;
+            
+            // 页码
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    html += `<span class="page-ellipsis">...</span>`;
+                }
+            }
+            
+            // 下一页
+            html += `<button class="page-btn" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>下一页</button>`;
+            
+            pagination.innerHTML = html;
+        }
+
+        // 跳转到指定页
+        function goToPage(page) {
+            const totalPages = Math.ceil(filteredDrivers.length / pageSize);
+            if (page < 1 || page > totalPages || page === currentPage) return;
+            currentPage = page;
+            renderDriverTable();
+            renderPagination();
+        }
+
+        // 每页条数变化
+        function handlePageSizeChange() {
+            pageSize = parseInt(document.getElementById('pageSize').value);
+            currentPage = 1;
+            renderDriverTable();
+            renderPagination();
+        }
+
+        // 筛选处理
+        function handleFilter() {
+            const status = document.getElementById('statusFilter').value;
+            const license = document.getElementById('licenseFilter').value;
+            const search = document.getElementById('searchInput').value.trim();
+
+            filteredDrivers = mockData.drivers.filter(driver => {
+                if (status && driver.status !== status) return false;
+                if (license && driver.drivingLicense !== license) return false;
+                if (search && !driver.name.includes(search) && !driver.phone.includes(search)) return false;
+                return true;
+            });
+
+            currentPage = 1;
+            renderDriverTable();
+            renderPagination();
+        }
+
+        // 搜索处理
+        function handleSearch() {
+            handleFilter();
+        }
+
+        // 搜索框回车事件
+        function handleSearchKeydown(event) {
+            if (event.key === 'Enter') {
+                handleSearch();
+            }
+        }
+
+        // 重置筛选
+        function handleReset() {
+            document.getElementById('statusFilter').value = '';
+            document.getElementById('licenseFilter').value = '';
+            document.getElementById('searchInput').value = '';
+            filteredDrivers = [...mockData.drivers];
+            currentPage = 1;
+            renderDriverTable();
+            renderPagination();
+            showToast('筛选已重置');
+        }
+
+        // 打开新增抽屉
+        function openAddDrawer() {
+            document.getElementById('addDrawer').classList.add('open');
+            document.getElementById('addDrawerOverlay').classList.add('open');
+            document.getElementById('addDriverForm').reset();
+            clearFormErrors('add');
+        }
+
+        // 关闭新增抽屉
+        function closeAddDrawer() {
+            document.getElementById('addDrawer').classList.remove('open');
+            document.getElementById('addDrawerOverlay').classList.remove('open');
+        }
+
+        // 新增提交
+        function handleAddSubmit(event) {
+            event.preventDefault();
+            clearFormErrors('add');
+
+            const name = document.getElementById('addName').value.trim();
+            const phone = document.getElementById('addPhone').value.trim();
+            const idCard = document.getElementById('addIdCard').value.trim();
+            const drivingLicense = document.getElementById('addLicense').value;
+            const licenseExpiry = document.getElementById('addLicenseExpiry').value;
+            const company = document.getElementById('addCompany').value.trim();
+            const department = document.getElementById('addDepartment').value.trim();
+
+            // 简单校验
+            let hasError = false;
+            if (!name) {
+                showFieldError('addName', '请输入司机姓名');
+                hasError = true;
+            }
+            if (!/^1[3-9]\d{9}$/.test(phone)) {
+                showFieldError('addPhone', '请输入正确的手机号');
+                hasError = true;
+            }
+            if (!/^\d{17}[\dXx]$/.test(idCard)) {
+                showFieldError('addIdCard', '请输入正确的身份证号');
+                hasError = true;
+            }
+            if (!drivingLicense) {
+                showFieldError('addLicense', '请选择准驾车型');
+                hasError = true;
+            }
+            if (!licenseExpiry) {
+                showFieldError('addLicenseExpiry', '请选择驾驶证有效期');
+                hasError = true;
+            }
+            if (!company) {
+                showFieldError('addCompany', '请输入所属公司');
+                hasError = true;
+            }
+            if (!department) {
+                showFieldError('addDepartment', '请输入所属部门');
+                hasError = true;
+            }
+
+            if (hasError) return;
+
+            // 添加新司机
+            const newDriver = {
+                id: 'D' + Date.now(),
+                name: name,
+                phone: phone,
+                idCard: idCard,
+                drivingLicense: drivingLicense,
+                licenseExpiry: licenseExpiry,
+                company: company,
+                department: department,
+                status: 'IDLE',
+                totalOrders: 0,
+                totalMileage: 0,
+                rating: 5.0,
+                createTime: new Date().toISOString(),
+                updateTime: new Date().toISOString()
+            };
+
+            mockData.drivers.unshift(newDriver);
+            filteredDrivers = [...mockData.drivers];
+            
+            closeAddDrawer();
+            renderDriverTable();
+            renderPagination();
+            showToast('新增司机成功');
+        }
+
+        // 打开编辑抽屉
+        function openEditDrawer(id) {
+            const driver = mockData.drivers.find(d => d.id === id);
+            if (!driver) return;
+
+            if (driver.status === 'WORKING') {
+                showToast('司机工作中，无法编辑', 'warning');
+                return;
+            }
+
+            document.getElementById('editId').value = driver.id;
+            document.getElementById('editName').value = driver.name;
+            document.getElementById('editPhone').value = driver.phone;
+            document.getElementById('editIdCard').value = driver.idCard;
+            document.getElementById('editLicense').value = driver.drivingLicense;
+            document.getElementById('editLicenseExpiry').value = driver.licenseExpiry;
+            document.getElementById('editCompany').value = driver.company;
+            document.getElementById('editDepartment').value = driver.department;
+
+            clearFormErrors('edit');
+            document.getElementById('editDrawer').classList.add('open');
+            document.getElementById('editDrawerOverlay').classList.add('open');
+        }
+
+        // 关闭编辑抽屉
+        function closeEditDrawer() {
+            document.getElementById('editDrawer').classList.remove('open');
+            document.getElementById('editDrawerOverlay').classList.remove('open');
+        }
+
+        // 编辑提交
+        function handleEditSubmit(event) {
+            event.preventDefault();
+            clearFormErrors('edit');
+
+            const id = document.getElementById('editId').value;
+            const name = document.getElementById('editName').value.trim();
+            const phone = document.getElementById('editPhone').value.trim();
+            const idCard = document.getElementById('editIdCard').value.trim();
+            const drivingLicense = document.getElementById('editLicense').value;
+            const licenseExpiry = document.getElementById('editLicenseExpiry').value;
+            const company = document.getElementById('editCompany').value.trim();
+            const department = document.getElementById('editDepartment').value.trim();
+
+            // 简单校验
+            let hasError = false;
+            if (!name) {
+                showFieldError('editName', '请输入司机姓名');
+                hasError = true;
+            }
+            if (!/^1[3-9]\d{9}$/.test(phone)) {
+                showFieldError('editPhone', '请输入正确的手机号');
+                hasError = true;
+            }
+            if (!/^\d{17}[\dXx]$/.test(idCard)) {
+                showFieldError('editIdCard', '请输入正确的身份证号');
+                hasError = true;
+            }
+            if (!drivingLicense) {
+                showFieldError('editLicense', '请选择准驾车型');
+                hasError = true;
+            }
+            if (!licenseExpiry) {
+                showFieldError('editLicenseExpiry', '请选择驾驶证有效期');
+                hasError = true;
+            }
+            if (!company) {
+                showFieldError('editCompany', '请输入所属公司');
+                hasError = true;
+            }
+            if (!department) {
+                showFieldError('editDepartment', '请输入所属部门');
+                hasError = true;
+            }
+
+            if (hasError) return;
+
+            // 更新司机信息
+            const index = mockData.drivers.findIndex(d => d.id === id);
+            if (index !== -1) {
+                mockData.drivers[index] = {
+                    ...mockData.drivers[index],
+                    name: name,
+                    phone: phone,
+                    idCard: idCard,
+                    drivingLicense: drivingLicense,
+                    licenseExpiry: licenseExpiry,
+                    company: company,
+                    department: department,
+                    updateTime: new Date().toISOString()
+                };
+            }
+
+            filteredDrivers = [...mockData.drivers];
+            closeEditDrawer();
+            renderDriverTable();
+            showToast('修改成功');
+        }
+
+        // 打开删除确认框
+        function openDeleteModal(id, name) {
+            const driver = mockData.drivers.find(d => d.id === id);
+            if (!driver) return;
+
+            if (driver.status === 'WORKING') {
+                showToast('司机工作中，无法删除', 'warning');
+                return;
+            }
+
+            deleteDriverId = id;
+            document.getElementById('deleteMessage').textContent = `确定要删除司机${name}吗？`;
+            document.getElementById('deleteModal').classList.add('open');
+            document.getElementById('deleteModalOverlay').classList.add('open');
+        }
+
+        // 关闭删除确认框
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').classList.remove('open');
+            document.getElementById('deleteModalOverlay').classList.remove('open');
+            deleteDriverId = null;
+        }
+
+        // 确认删除
+        function confirmDelete() {
+            if (!deleteDriverId) return;
+
+            const index = mockData.drivers.findIndex(d => d.id === deleteDriverId);
+            if (index !== -1) {
+                mockData.drivers.splice(index, 1);
+            }
+
+            filteredDrivers = [...mockData.drivers];
+            closeDeleteModal();
+            renderDriverTable();
+            renderPagination();
+            showToast('删除成功');
+        }
+
+        // 显示字段错误
+        function showFieldError(fieldId, message) {
+            const errorEl = document.getElementById(fieldId + 'Error');
+            if (errorEl) {
+                errorEl.textContent = message;
+            }
+        }
+
+        // 清除表单错误
+        function clearFormErrors(prefix) {
+            const fields = ['Name', 'Phone', 'IdCard', 'License', 'LicenseExpiry', 'Company', 'Department'];
+            fields.forEach(field => {
+                const errorEl = document.getElementById(prefix + field + 'Error');
+                if (errorEl) {
+                    errorEl.textContent = '';
+                }
+            });
+        }
+    </script>
+</body>
+</html>

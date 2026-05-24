@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能物流管理系统 - 登录</title>
+    <link rel="stylesheet" href="./assets/css/styles.css">
+    <style>
+        /* 登录页额外样式 */
+        body.login-page {
+            min-height: 100vh;
+            display: flex;
+            background: linear-gradient(135deg, #1a3a5c 0%, #2c5282 50%, #1a365d 100%);
+            background-attachment: fixed;
+        }
+        
+        .login-brand {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 60px;
+            color: #fff;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .login-brand::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 60%);
+            animation: pulse 8s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+        
+        .brand-logo {
+            font-size: 56px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .brand-logo svg {
+            width: 64px;
+            height: 64px;
+        }
+        
+        .brand-subtitle {
+            font-size: 20px;
+            opacity: 0.9;
+            margin-bottom: 60px;
+            font-weight: 300;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .feature-list li {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 0;
+            font-size: 16px;
+            opacity: 0.85;
+            transition: opacity 0.3s;
+        }
+        
+        .feature-list li:hover {
+            opacity: 1;
+        }
+        
+        .feature-list .icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .feature-list .icon svg {
+            width: 20px;
+            height: 20px;
+        }
+        
+        .login-form-container {
+            width: 520px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fff;
+            padding: 40px;
+            box-shadow: -10px 0 40px rgba(0,0,0,0.1);
+        }
+        
+        .login-box {
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .login-title {
+            font-size: 28px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+        }
+        
+        .login-subtitle {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 40px;
+        }
+        
+        .form-group {
+            margin-bottom: 24px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .form-input {
+            width: 100%;
+            height: 48px;
+            padding: 0 16px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: all 0.3s;
+            background: #fafafa;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #1890ff;
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(24,144,255,0.1);
+        }
+        
+        .form-input::placeholder {
+            color: #bbb;
+        }
+        
+        .form-input.error {
+            border-color: #ff4d4f;
+            background: #fff1f0;
+        }
+        
+        .form-error {
+            color: #ff4d4f;
+            font-size: 12px;
+            margin-top: 6px;
+            display: none;
+        }
+        
+        .form-error.show {
+            display: block;
+        }
+        
+        .verify-row {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .verify-row .form-input {
+            flex: 1;
+        }
+        
+        .verify-code {
+            width: 120px;
+            height: 48px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            letter-spacing: 4px;
+            user-select: none;
+            cursor: pointer;
+        }
+        
+        .verify-code:hover {
+            background: #eee;
+        }
+        
+        .remember-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        
+        .remember-me {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+        
+        .remember-me input {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+        
+        .remember-me span {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .forgot-link {
+            font-size: 14px;
+            color: #1890ff;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        
+        .forgot-link:hover {
+            text-decoration: underline;
+        }
+        
+        .login-btn {
+            width: 100%;
+            height: 48px;
+            background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .login-btn:hover {
+            background: linear-gradient(135deg, #1976d2 0%, #0d47a1 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(24,144,255,0.4);
+        }
+        
+        .login-btn:active {
+            transform: translateY(0);
+        }
+        
+        .login-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .login-btn.loading .btn-text {
+            visibility: hidden;
+        }
+        
+        .login-btn .spinner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: none;
+        }
+        
+        .login-btn.loading .spinner {
+            display: block;
+        }
+        
+        @keyframes spin {
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        
+        .demo-hint {
+            margin-top: 32px;
+            padding: 16px;
+            background: #e6f7ff;
+            border-radius: 8px;
+            border: 1px solid #91d5ff;
+        }
+        
+        .demo-hint-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: #1890ff;
+            margin-bottom: 8px;
+        }
+        
+        .demo-hint-text {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        .demo-hint-text code {
+            background: rgba(0,0,0,0.06);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        
+        .role-select {
+            margin-bottom: 24px;
+            padding: 16px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+        
+        .role-select-title {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 12px;
+        }
+        
+        .role-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .role-option {
+            padding: 6px 14px;
+            border: 1px solid #e0e0e0;
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #fff;
+        }
+        
+        .role-option:hover {
+            border-color: #1890ff;
+            color: #1890ff;
+        }
+        
+        .role-option.active {
+            background: #1890ff;
+            border-color: #1890ff;
+            color: #fff;
+        }
+        
+        /* Toast 样式 */
+        .toast {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            padding: 14px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 10000;
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+        
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        
+        .toast.success {
+            background: #52c41a;
+            color: #fff;
+        }
+        
+        .toast.error {
+            background: #ff4d4f;
+            color: #fff;
+        }
+        
+        .toast.warning {
+            background: #faad14;
+            color: #fff;
+        }
+        
+        @media (max-width: 900px) {
+            .login-brand {
+                display: none;
+            }
+            
+            .login-form-container {
+                width: 100%;
+                min-height: 100vh;
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+<body class="login-page">
+    <!-- 左侧品牌区 -->
+    <div class="login-brand">
+        <div class="brand-logo">
+            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="4" y="16" width="40" height="20" rx="3" fill="white" fill-opacity="0.2" stroke="white" stroke-width="2"/>
+                <circle cx="12" cy="36" r="4" fill="white"/>
+                <circle cx="36" cy="36" r="4" fill="white"/>
+                <path d="M8 16V10C8 8.89543 8.89543 8 10 8H38C39.1046 8 40 8.89543 40 10V16" stroke="white" stroke-width="2" fill="none"/>
+                <rect x="20" y="10" width="8" height="4" rx="1" fill="white"/>
+                <path d="M34 20L40 24V32L34 28V20Z" fill="white" fill-opacity="0.3"/>
+            </svg>
+            智能物流管理系统
+        </div>
+        <div class="brand-subtitle">覆盖物流全流程的智能化管理平台</div>
+        <ul class="feature-list">
+            <li>
+                <div class="icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                </div>
+                订单全生命周期管理
+            </li>
+            <li>
+                <div class="icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="1" y="3" width="15" height="13" rx="2"/>
+                        <path d="M16 8h4l3 3v5h-7V8z"/>
+                        <circle cx="5.5" cy="18.5" r="2.5"/>
+                        <circle cx="18.5" cy="18.5" r="2.5"/>
+                    </svg>
+                </div>
+                车辆与司机智能调度
+            </li>
+            <li>
+                <div class="icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s-8-4.5-8-11.8A8 8 0 0112 2a8 8 0 018 8.2c0 7.3-8 11.8-8 11.8z"/>
+                        <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                </div>
+                运输轨迹实时追踪
+            </li>
+            <li>
+                <div class="icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                        <line x1="12" y1="9" x2="12" y2="13"/>
+                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                </div>
+                异常预警与快速处理
+            </li>
+            <li>
+                <div class="icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="20" x2="18" y2="10"/>
+                        <line x1="12" y1="20" x2="12" y2="4"/>
+                        <line x1="6" y1="20" x2="6" y2="14"/>
+                    </svg>
+                </div>
+                全方位数据统计分析
+            </li>
+        </ul>
+    </div>
+    
+    <!-- 右侧登录表单 -->
+    <div class="login-form-container">
+        <div class="login-box">
+            <h1 class="login-title">欢迎登录</h1>
+            <p class="login-subtitle">Intelligent Logistics Management System</p>
+            
+            <!-- 角色选择演示 -->
+            <div class="role-select">
+                <div class="role-select-title">选择登录角色（演示）：</div>
+                <div class="role-options">
+                    <div class="role-option active" data-role="dispatcher">调度员</div>
+                    <div class="role-option" data-role="customer_service">客服</div>
+                    <div class="role-option" data-role="manager">物流经理</div>
+                    <div class="role-option" data-role="warehouse">仓库管理</div>
+                    <div class="role-option" data-role="admin">超级管理员</div>
+                </div>
+            </div>
+            
+            <form id="loginForm" onsubmit="return handleLogin(event)">
+                <div class="form-group">
+                    <label class="form-label">用户名</label>
+                    <input 
+                        type="text" 
+                        class="form-input" 
+                        id="username" 
+                        placeholder="请输入用户名"
+                        value="admin"
+                        required
+                    >
+                    <div class="form-error" id="usernameError">请输入用户名</div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">密码</label>
+                    <input 
+                        type="password" 
+                        class="form-input" 
+                        id="password" 
+                        placeholder="请输入密码"
+                        value="123456"
+                        required
+                    >
+                    <div class="form-error" id="passwordError">请输入密码</div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">验证码</label>
+                    <div class="verify-row">
+                        <input 
+                            type="text" 
+                            class="form-input" 
+                            id="verifyCode" 
+                            placeholder="请输入验证码"
+                            maxlength="4"
+                        >
+                        <div class="verify-code" onclick="refreshVerifyCode()">3K7P</div>
+                    </div>
+                    <div class="form-error" id="verifyError">请输入正确的验证码</div>
+                </div>
+                
+                <div class="remember-row">
+                    <label class="remember-me">
+                        <input type="checkbox" id="rememberMe" checked>
+                        <span>记住登录</span>
+                    </label>
+                    <a class="forgot-link">忘记密码？</a>
+                </div>
+                
+                <button type="submit" class="login-btn" id="loginBtn">
+                    <span class="btn-text">登 录</span>
+                    <div class="spinner"></div>
+                </button>
+            </form>
+            
+            <div class="demo-hint">
+                <div class="demo-hint-title">演示账号说明</div>
+                <div class="demo-hint-text">
+                    当前选择：<code id="currentRole">调度员</code><br>
+                    用户名：admin | 密码：123456<br>
+                    登录后即可体验完整的物流管理系统功能
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast 提示 -->
+    <div class="toast" id="toast"></div>
+    
+    <script src="./assets/js/app.js"></script>
+    <script>
+        // 角色选择
+        const roleMap = {
+            'dispatcher': '调度员',
+            'customer_service': '客服人员',
+            'manager': '物流经理',
+            'warehouse': '仓库管理员',
+            'admin': '超级管理员'
+        };
+        
+        document.querySelectorAll('.role-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.role-option').forEach(o => o.classList.remove('active'));
+                this.classList.add('active');
+                document.getElementById('currentRole').textContent = roleMap[this.dataset.role];
+            });
+        });
+        
+        // 刷新验证码
+        function refreshVerifyCode() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let code = '';
+            for (let i = 0; i < 4; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            document.querySelector('.verify-code').textContent = code;
+        }
+        
+        // 显示 Toast
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast ' + type;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+        
+        // 表单验证
+        function validateForm() {
+            let isValid = true;
+            const username = document.getElementById('username');
+            const password = document.getElementById('password');
+            const verifyCode = document.getElementById('verifyCode');
+            
+            // 清除错误状态
+            document.querySelectorAll('.form-input').forEach(input => input.classList.remove('error'));
+            document.querySelectorAll('.form-error').forEach(error => error.classList.remove('show'));
+            
+            if (!username.value.trim()) {
+                username.classList.add('error');
+                document.getElementById('usernameError').classList.add('show');
+                isValid = false;
+            }
+            
+            if (!password.value.trim()) {
+                password.classList.add('error');
+                document.getElementById('passwordError').classList.add('show');
+                isValid = false;
+            }
+            
+            return isValid;
+        }
+        
+        // 登录处理
+        function handleLogin(event) {
+            event.preventDefault();
+            
+            if (!validateForm()) {
+                return false;
+            }
+            
+            const loginBtn = document.getElementById('loginBtn');
+            loginBtn.classList.add('loading');
+            loginBtn.disabled = true;
+            
+            // 模拟登录请求
+            setTimeout(() => {
+                loginBtn.classList.remove('loading');
+                loginBtn.disabled = false;
+                
+                // 登录成功
+                showToast('登录成功，正在跳转...', 'success');
+                
+                // 存储登录信息
+                const selectedRole = document.querySelector('.role-option.active').dataset.role;
+                localStorage.setItem('userRole', selectedRole);
+                localStorage.setItem('isLoggedIn', 'true');
+                
+                // 2秒后跳转到首页
+                setTimeout(() => {
+                    window.location.href = './pages/首页.html';
+                }, 1500);
+            }, 1500);
+            
+            return false;
+        }
+        
+        // 失焦验证
+        document.getElementById('username').addEventListener('blur', function() {
+            if (!this.value.trim()) {
+                this.classList.add('error');
+                document.getElementById('usernameError').classList.add('show');
+            } else {
+                this.classList.remove('error');
+                document.getElementById('usernameError').classList.remove('show');
+            }
+        });
+        
+        document.getElementById('password').addEventListener('blur', function() {
+            if (!this.value.trim()) {
+                this.classList.add('error');
+                document.getElementById('passwordError').classList.add('show');
+            } else {
+                this.classList.remove('error');
+                document.getElementById('passwordError').classList.remove('show');
+            }
+        });
+    </script>
+</body>
+</html>

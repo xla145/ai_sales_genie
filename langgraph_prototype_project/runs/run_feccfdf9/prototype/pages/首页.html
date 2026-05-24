@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>首页 - 智能物流管理系统</title>
+    <link rel="stylesheet" href="../assets/css/styles.css">
+    <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css" />
+    <link rel="stylesheet" href="https://unpkg.com/@element-plus/icons-vue">
+    <style>
+        .home-page {
+            min-height: 100vh;
+            background: #f0f2f5;
+        }
+        
+        /* 页面头部 */
+        .page-header {
+            background: #fff;
+            padding: 0 24px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #e8e8e8;
+        }
+        
+        .page-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #262626;
+        }
+        
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: background 0.3s;
+        }
+        
+        .user-info:hover {
+            background: #f5f7fa;
+        }
+        
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #1890ff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 14px;
+        }
+        
+        .user-name {
+            color: #595959;
+            font-size: 14px;
+        }
+        
+        /* 今日概览 */
+        .overview-section {
+            margin-bottom: 24px;
+        }
+        
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #262626;
+            margin-bottom: 16px;
+        }
+        
+        .overview-cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+        
+        .overview-card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid #e8e8e8;
+        }
+        
+        .overview-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        
+        .card-title {
+            font-size: 14px;
+            color: #8c8c8c;
+        }
+        
+        .card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        
+        .card-icon.blue { background: rgba(24, 144, 255, 0.1); color: #1890ff; }
+        .card-icon.green { background: rgba(82, 196, 26, 0.1); color: #52c41a; }
+        .card-icon.red { background: rgba(255, 77, 79, 0.1); color: #ff4d4f; }
+        .card-icon.orange { background: rgba(250, 140, 22, 0.1); color: #fa8c16; }
+        
+        .card-value {
+            font-size: 28px;
+            font-weight: 600;
+            color: #262626;
+            margin-bottom: 4px;
+        }
+        
+        .card-value.blue { color: #1890ff; }
+        .card-value.green { color: #52c41a; }
+        .card-value.red { color: #ff4d4f; }
+        .card-value.orange { color: #fa8c16; }
+        
+        /* 中间区域 */
+        .middle-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+        
+        /* 待办事项 */
+        .todo-card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #e8e8e8;
+        }
+        
+        .todo-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        
+        .todo-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .todo-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: #fafafa;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+        
+        .todo-item:hover {
+            background: #f0f5ff;
+        }
+        
+        .todo-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .todo-badge {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        
+        .todo-badge.high { background: #ff4d4f; }
+        .todo-badge.medium { background: #fa8c16; }
+        .todo-badge.low { background: #1890ff; }
+        
+        .todo-text {
+            color: #262626;
+            font-size: 14px;
+        }
+        
+        .todo-count {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .todo-count.high { color: #ff4d4f; }
+        .todo-count.medium { color: #fa8c16; }
+        .todo-count.low { color: #1890ff; }
+        
+        .todo-more {
+            color: #1890ff;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .todo-more:hover {
+            color: #40a9ff;
+        }
+        
+        /* 快捷入口 */
+        .quick-card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #e8e8e8;
+        }
+        
+        .quick-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        
+        .quick-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+        
+        .quick-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+        
+        .quick-item:hover {
+            background: #f0f5ff;
+        }
+        
+        .quick-item:hover .quick-icon {
+            transform: scale(1.1);
+        }
+        
+        .quick-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            transition: transform 0.3s;
+        }
+        
+        .quick-icon.blue { background: rgba(24, 144, 255, 0.1); color: #1890ff; }
+        .quick-icon.green { background: rgba(82, 196, 26, 0.1); color: #52c41a; }
+        .quick-icon.orange { background: rgba(250, 140, 22, 0.1); color: #fa8c16; }
+        .quick-icon.purple { background: rgba(114, 46, 209, 0.1); color: #722ed1; }
+        .quick-icon.red { background: rgba(255, 77, 79, 0.1); color: #ff4d4f; }
+        .quick-icon.cyan { background: rgba(19, 194, 194, 0.1); color: #13c2c2; }
+        
+        .quick-text {
+            font-size: 14px;
+            color: #595959;
+        }
+        
+        /* 趋势图表 */
+        .chart-section {
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #e8e8e8;
+        }
+        
+        .chart-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        .chart-tabs {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .chart-tab {
+            padding: 6px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid #d9d9d9;
+            background: #fff;
+            color: #595959;
+        }
+        
+        .chart-tab:hover {
+            border-color: #1890ff;
+            color: #1890ff;
+        }
+        
+        .chart-tab.active {
+            background: #1890ff;
+            border-color: #1890ff;
+            color: #fff;
+        }
+        
+        .chart-container {
+            height: 300px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        
+        .chart-box {
+            background: #fafafa;
+            border-radius: 8px;
+            padding: 16px;
+        }
+        
+        .chart-box-title {
+            font-size: 14px;
+            color: #595959;
+            margin-bottom: 12px;
+        }
+        
+        .chart-placeholder {
+            height: 220px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 16px;
+            gap: 8px;
+        }
+        
+        .chart-bar-group {
+            display: flex;
+            align-items: flex-end;
+            gap: 12px;
+            height: 180px;
+        }
+        
+        .chart-bar {
+            width: 32px;
+            border-radius: 4px 4px 0 0;
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .chart-bar:hover {
+            opacity: 0.8;
+        }
+        
+        .chart-bar.blue { background: linear-gradient(180deg, #1890ff 0%, #69c0ff 100%); }
+        .chart-bar.green { background: linear-gradient(180deg, #52c41a 0%, #95de64 100%); }
+        
+        .chart-bar-label {
+            font-size: 12px;
+            color: #8c8c8c;
+            text-align: center;
+            margin-top: 8px;
+        }
+        
+        /* 加载状态 */
+        .loading-skeleton {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .skeleton-card {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s ease-in-out infinite;
+            border-radius: 8px;
+            height: 100px;
+        }
+        
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
+        /* 空状态 */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: #8c8c8c;
+        }
+        
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            color: #d9d9d9;
+        }
+        
+        /* 响应式 */
+        @media (max-width: 1200px) {
+            .overview-cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .middle-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .chart-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="home-page">
+        <!-- 页面头部 -->
+        <div class="page-header">
+            <div class="page-title">首页</div>
+            <div class="header-right">
+                <div class="user-info" @click="showUserMenu = !showUserMenu">
+                    <div class="user-avatar">管</div>
+                    <span class="user-name">管理人员</span>
+                    <el-icon><arrow-down /></el-icon>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 主内容区 -->
+        <div class="main-content" style="padding: 24px;">
+            
+            <!-- 今日概览 -->
+            <div class="overview-section">
+                <div class="section-title">今日概览</div>
+                <div class="overview-cards">
+                    <div class="overview-card" @click="goToPage('./订单列表.html')">
+                        <div class="card-header">
+                            <span class="card-title">今日订单</span>
+                            <div class="card-icon blue">
+                                <el-icon><document /></el-icon>
+                            </div>
+                        </div>
+                        <div class="card-value blue">128</div>
+                        <div style="color: #8c8c8c; font-size: 12px;">较昨日 +12%</div>
+                    </div>
+                    
+                    <div class="overview-card" @click="goToPage('./订单列表.html?status=IN_TRANSPORT')">
+                        <div class="card-header">
+                            <span class="card-title">运输中</span>
+                            <div class="card-icon green">
+                                <el-icon><truck /></el-icon>
+                            </div>
+                        </div>
+                        <div class="card-value green">45</div>
+                        <div style="color: #8c8c8c; font-size: 12px;">正在运输</div>
+                    </div>
+                    
+                    <div class="overview-card" @click="goToPage('./异常处理.html')">
+                        <div class="card-header">
+                            <span class="card-title">异常订单</span>
+                            <div class="card-icon red">
+                                <el-icon><warning /></el-icon>
+                            </div>
+                        </div>
+                        <div class="card-value red">3</div>
+                        <div style="color: #8c8c8c; font-size: 12px;">待处理</div>
+                    </div>
+                    
+                    <div class="overview-card" @click="goToPage('./数据看板.html')">
+                        <div class="card-header">
+                            <span class="card-title">今日收入</span>
+                            <div class="card-icon orange">
+                                <el-icon><money /></el-icon>
+                            </div>
+                        </div>
+                        <div class="card-value orange">¥126,800</div>
+                        <div style="color: #8c8c8c; font-size: 12px;">较昨日 +8%</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 中间区域：待办事项 + 快捷入口 -->
+            <div class="middle-section">
+                
+                <!-- 待办事项 -->
+                <div class="todo-card">
+                    <div class="todo-header">
+                        <div class="section-title" style="margin-bottom: 0;">待办事项</div>
+                        <span class="todo-more" @click="goToPage('./订单列表.html')">
+                            全部待办 <el-icon><arrow-right /></el-icon>
+                        </span>
+                    </div>
+                    <div class="todo-list">
+                        <a class="todo-item" href="./智能调度.html">
+                            <div class="todo-info">
+                                <span class="todo-badge high"></span>
+                                <span class="todo-text">待派单订单</span>
+                            </div>
+                            <span class="todo-count high">5</span>
+                        </a>
+                        <a class="todo-item" href="./异常处理.html">
+                            <div class="todo-info">
+                                <span class="todo-badge high"></span>
+                                <span class="todo-text">待处理异常</span>
+                            </div>
+                            <span class="todo-count high">3</span>
+                        </a>
+                        <a class="todo-item" href="./订单列表.html?status=SIGNED">
+                            <div class="todo-info">
+                                <span class="todo-badge medium"></span>
+                                <span class="todo-text">待签收订单</span>
+                            </div>
+                            <span class="todo-count medium">2</span>
+                        </a>
+                        <a class="todo-item" href="./智能调度.html">
+                            <div class="todo-info">
+                                <span class="todo-badge medium"></span>
+                                <span class="todo-text">待审批调度</span>
+                            </div>
+                            <span class="todo-count medium">1</span>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- 快捷入口 -->
+                <div class="quick-card">
+                    <div class="quick-header">
+                        <div class="section-title" style="margin-bottom: 0;">快捷入口</div>
+                    </div>
+                    <div class="quick-grid">
+                        <a class="quick-item" href="./新建订单.html">
+                            <div class="quick-icon blue">
+                                <el-icon><plus /></el-icon>
+                            </div>
+                            <span class="quick-text">新建订单</span>
+                        </a>
+                        <a class="quick-item" href="./车辆管理.html">
+                            <div class="quick-icon green">
+                                <el-icon><truck /></el-icon>
+                            </div>
+                            <span class="quick-text">车辆管理</span>
+                        </a>
+                        <a class="quick-item" href="./智能调度.html">
+                            <div class="quick-icon orange">
+                                <el-icon><location /></el-icon>
+                            </div>
+                            <span class="quick-text">调度中心</span>
+                        </a>
+                        <a class="quick-item" href="./运输轨迹.html">
+                            <div class="quick-icon purple">
+                                <el-icon><map-location /></el-icon>
+                            </div>
+                            <span class="quick-text">运输轨迹</span>
+                        </a>
+                        <a class="quick-item" href="./异常处理.html">
+                            <div class="quick-icon red">
+                                <el-icon><warning /></el-icon>
+                            </div>
+                            <span class="quick-text">异常处理</span>
+                        </a>
+                        <a class="quick-item" href="./数据看板.html">
+                            <div class="quick-icon cyan">
+                                <el-icon><data-analysis /></el-icon>
+                            </div>
+                            <span class="quick-text">数据看板</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 趋势图表 -->
+            <div class="chart-section">
+                <div class="chart-header">
+                    <div class="section-title" style="margin-bottom: 0;">趋势图表</div>
+                    <div class="chart-tabs">
+                        <span class="chart-tab active" @click="switchChart('7d')">近7天</span>
+                        <span class="chart-tab" @click="switchChart('30d')">近30天</span>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <!-- 订单趋势 -->
+                    <div class="chart-box">
+                        <div class="chart-box-title">订单趋势</div>
+                        <div class="chart-placeholder">
+                            <div class="chart-bar-group">
+                                <div style="display: flex; flex-direction: column; align-items: center;">
+                                    <div class="chart-bar blue" style="height: 70px;"></div>
+                                    <span class="chart-bar-label">01-09</span>
+                                </div>
+                                <div style="display: flex; flex-direction: column; align-items: center;">
+                                    <div class="chart-bar blue" style="height: 85px;"></div>
+                                    <span class="chart-bar-label">01-10</span>
+                                </div>
+                                <div style="display: flex; flex-direction: column; align-items: center;">
+                                    <div class="chart-bar blue" style="height: 78px;"></div>
+                                    <span class="chart-bar-label">01-11</span>
+                                </div>
+                                <div style="display: flex; flex-direction: column; align-items: center;">
+                                    <div class="chart-bar blue" style="height: 95px;"></div>
+                                    <span class="chart-bar-label">01-12</span>
+                                </div>
+                                <div style="display: flex; flex-direction: column; align-items: center;">
+                                    <div class="chart-bar blue" style="height: 88px;"></div>
+                                    <span class="chart-bar-label">01-13</span>
+                                </div>
+                                <div style="display: flex; flex-direction: column; align-items: center;">
+                                    <div class="chart-bar blue" style="height: 100px;"></div>
+                                    <span class="chart-bar-label">01-14</span>
+                                </div>
+                                <div style="display: flex; flex-direction: column; align-items: center;">
+                                    <div class="chart-bar blue" style="height: 96px;"></div>
+                                    <span class="chart-bar-label">01-15</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 收入趋势 -->
+                    <div class="chart-box">
+                        <div class="chart-box-title">收入趋势</div>
+                        <div class="chart-placeholder">
+                            <div class="chart-bar-group">
+                                <div style="display: flex; flex-direction: column; align-items: center;">
+                                    <div class="chart-bar green" style="height: 60px;"></div>
+                                    <span class="chart-bar-label">01-09</span>
+                                </div>
+                                <div style="display: flex; flex-direction: column; align-items: center;">
+                                    <div class="chart-bar green" style="height: 80px;"></div>
+                                    <span class="chart-bar-label">01-10</span>
+                                </div>
+                                <div style="display: flex; flex-direction: column; align-items: center;">
+                                    <div class="chart-bar green" style="height: 72px;"></div>
+                                    <span class="chart-bar-label">01-11</span>
+                                </div>
+                                <div style="display: flex; flex-direction: column; align-items: center;">
+                                    <div class="chart-bar green" style="height: 92px;"></div>
+                                    <span class="chart-bar-label">01-12</span>
+                                </div>
+                                <div style="display: flex; flex-direction: column; align-items: center;">
+                                    <div class="chart-bar green" style="height: 85px;"></div>
+                                    <span class="chart-bar-label">01-13</span>
+                                </div>
+                                <div style="display: flex; flex-direction: column; align-items: center;">
+                                    <div class="chart-bar green" style="height: 98px;"></div>
+                                    <span class="chart-bar-label">01-14</span>
+                                </div>
+                                <div style="display: flex; flex-direction: column; align-items: center;">
+                                    <div class="chart-bar green" style="height: 94px;"></div>
+                                    <span class="chart-bar-label">01-15</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 用户菜单弹窗 -->
+        <el-dialog v-model="showUserMenu" title="用户信息" width="400px">
+            <div style="text-align: center; padding: 20px;">
+                <div class="user-avatar" style="width: 64px; height: 64px; font-size: 24px; margin: 0 auto 16px;">管</div>
+                <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">管理人员</div>
+                <div style="color: #8c8c8c; margin-bottom: 24px;">物流公司管理层</div>
+                <el-button type="primary" style="width: 100%;" @click="logout">退出登录</el-button>
+            </div>
+        </el-dialog>
+        
+        <!-- 退出确认弹窗 -->
+        <el-dialog v-model="showLogoutConfirm" title="确认退出" width="400px">
+            <div style="text-align: center; padding: 20px;">
+                <el-icon style="font-size: 48px; color: #faad14; margin-bottom: 16px;"><warning /></el-icon>
+                <div style="font-size: 16px;">确定要退出登录吗？</div>
+            </div>
+            <template #footer>
+                <el-button @click="showLogoutConfirm = false">取消</el-button>
+                <el-button type="primary" @click="confirmLogout">确定</el-button>
+            </template>
+        </el-dialog>
+        
+        <!-- 顶部导航 - 固定在页面顶部 -->
+        <div class="topbar">
+            <div class="brand">
+                <el-icon class="brand-icon"><truck /></el-icon>
+                <span class="brand-text">智能物流管理系统</span>
+            </div>
+            <nav class="nav-menu">
+                <a href="./首页.html" class="nav-link active">
+                    <el-icon><home-filled /></el-icon>
+                    <span>首页</span>
+                </a>
+                <a href="./订单列表.html" class="nav-link">
+                    <el-icon><document /></el-icon>
+                    <span>订单管理</span>
+                </a>
+                <a href="./车辆管理.html" class="nav-link">
+                    <el-icon><truck /></el-icon>
+                    <span>车辆管理</span>
+                </a>
+                <a href="./司机管理.html" class="nav-link">
+                    <el-icon><user /></el-icon>
+                    <span>司机管理</span>
+                </a>
+                <a href="./智能调度.html" class="nav-link">
+                    <el-icon><location /></el-icon>
+                    <span>智能调度</span>
+                </a>
+                <a href="./运输轨迹.html" class="nav-link">
+                    <el-icon><map-location /></el-icon>
+                    <span>运输轨迹</span>
+                </a>
+                <a href="./异常处理.html" class="nav-link">
+                    <el-icon><warning /></el-icon>
+                    <span>异常处理</span>
+                </a>
+                <a href="./数据看板.html" class="nav-link">
+                    <el-icon><data-analysis /></el-icon>
+                    <span>数据看板</span>
+                </a>
+                <a href="./系统设置.html" class="nav-link">
+                    <el-icon><setting /></el-icon>
+                    <span>系统设置</span>
+                </a>
+            </nav>
+        </div>
+        
+        <!-- 侧边栏 -->
+        <div class="sidebar">
+            <div class="nav-section">
+                <div class="nav-section-title">功能菜单</div>
+                <a href="./首页.html" class="nav-link active">
+                    <el-icon><home-filled /></el-icon>
+                    <span>首页</span>
+                </a>
+                <a href="./订单列表.html" class="nav-link">
+                    <el-icon><document /></el-icon>
+                    <span>订单列表</span>
+                </a>
+                <a href="./车辆管理.html" class="nav-link">
+                    <el-icon><truck /></el-icon>
+                    <span>车辆管理</span>
+                </a>
+                <a href="./司机管理.html" class="nav-link">
+                    <el-icon><user /></el-icon>
+                    <span>司机管理</span>
+                </a>
+                <a href="./智能调度.html" class="nav-link">
+                    <el-icon><location /></el-icon>
+                    <span>智能调度</span>
+                </a>
+                <a href="./运输轨迹.html" class="nav-link">
+                    <el-icon><map-location /></el-icon>
+                    <span>运输轨迹</span>
+                </a>
+                <a href="./异常处理.html" class="nav-link">
+                    <el-icon><warning /></el-icon>
+                    <span>异常处理</span>
+                </a>
+                <a href="./数据看板.html" class="nav-link">
+                    <el-icon><data-analysis /></el-icon>
+                    <span>数据看板</span>
+                </a>
+                <a href="./系统设置.html" class="nav-link">
+                    <el-icon><setting /></el-icon>
+                    <span>系统设置</span>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/element-plus"></script>
+    <script src="https://unpkg.com/@element-plus/icons-vue"></script>
+    <script src="../assets/js/mock-data.js"></script>
+    <script src="../assets/js/app.js"></script>
+    <script>
+        const { createApp, ref, onMounted } = Vue;
+        
+        const app = createApp({
+            setup() {
+                const showUserMenu = ref(false);
+                const showLogoutConfirm = ref(false);
+                const activeChart = ref('7d');
+                
+                const switchChart = (period) => {
+                    activeChart.value = period;
+                    document.querySelectorAll('.chart-tab').forEach(tab => {
+                        tab.classList.remove('active');
+                    });
+                    event.target.classList.add('active');
+                };
+                
+                const goToPage = (url) => {
+                    window.location.href = url;
+                };
+                
+                const logout = () => {
+                    showUserMenu.value = false;
+                    showLogoutConfirm.value = true;
+                };
+                
+                const confirmLogout = () => {
+                    window.location.href = './index.html';
+                };
+                
+                onMounted(() => {
+                    // 初始化
+                    console.log('首页加载完成');
+                });
+                
+                return {
+                    showUserMenu,
+                    showLogoutConfirm,
+                    activeChart,
+                    switchChart,
+                    goToPage,
+                    logout,
+                    confirmLogout
+                };
+            }
+        });
+        
+        app.use(ElementPlus);
+        
+        // 注册图标组件
+        for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+            app.component(key, component);
+        }
+        
+        app.mount('#app');
+    </script>
+</body>
+</html>
